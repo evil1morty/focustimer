@@ -64,6 +64,32 @@ npm run build       # cargo tauri build — produces MSI + NSIS in app/src-tauri
 | `npm run format` | Format JS/CSS/HTML with Prettier              |
 | `npm run check`  | `cargo check` + `cargo clippy` + format check |
 
+## Manual QA checklist
+
+Run `npm run dev` and walk through:
+
+- [ ] Timer: start a pomodoro, watch the ring count down, then pause/resume.
+- [ ] Skip phase advances to the next phase; reset returns to Stopped.
+- [ ] After 4 pomodoros (configure a 1-minute duration if you don't want
+      to wait), the cycle dots fill and the next break is a long break.
+- [ ] Add a task. Click it to set it current — the "Now focusing on"
+      headline updates. Complete a pomodoro and the task's N/M increments;
+      reaching the estimate auto-completes the row and rolls current.
+- [ ] Drag a task to reorder. Inline-edit by clicking the title.
+- [ ] Settings: change a duration, verify the timer reflects the new
+      target on the next start. Toggle alarm and ticking sounds, theme.
+- [ ] Notifications: a Windows toast appears when a phase ends. With
+      "Announce 30s before end" on, a soft toast 30 s before each phase.
+- [ ] Tray: close the window → it hides to tray. Left-click the tray
+      icon → window restores. Tray tooltip shows MM:SS while running.
+- [ ] Hotkeys: Ctrl+Alt+P starts/pauses, Ctrl+Alt+S skips,
+      Ctrl+Alt+R resets — even when the window is minimized.
+- [ ] Stats: the bar chart fills after each completed pomodoro;
+      today/streak update without reopening the screen.
+- [ ] Lock the workstation (Win+L) while a pomodoro is running — the
+      timer pauses. Unlock → it resumes.
+- [ ] Restart the app — settings, tasks, and stats persist.
+
 ## License
 
 App code: MIT. Bundled sounds are reused from
