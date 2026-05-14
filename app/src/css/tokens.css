@@ -1,35 +1,41 @@
 /*
- * FocusTimer design tokens.
- * Phase colors drive the full-bleed background; everything else is white-on-color.
- * A `data-phase` attribute on <body> selects the active palette.
+ * FocusTimer design tokens — "Calm Focus".
+ *
+ * Distinct aesthetic: muted earth/dusk palette (not the Pomofocus red/teal),
+ * Space Grotesk headline + Inter body, a single phase pill instead of tabs,
+ * a progress ring around the timer instead of just numbers, task-first
+ * hierarchy with the active task as the headline above the timer.
  */
 
 :root {
-  /* phase palette */
-  --phase-pomodoro: #BA4949;
-  --phase-short-break: #38858A;
-  --phase-long-break: #397097;
-  --phase-stopped: #2F3E46;
+  /* phase palette — muted, sophisticated, low-saturation */
+  --phase-pomodoro: #7C4A3A;     /* warm clay / terracotta */
+  --phase-short-break: #5C7E6B;  /* sage */
+  --phase-long-break: #3F4E6B;   /* dusk indigo */
+  --phase-stopped: #23272F;      /* charcoal */
 
-  /* fg / surfaces on the colored background */
-  --fg: #FFFFFF;
-  --fg-muted: rgba(255, 255, 255, 0.72);
-  --fg-faint: rgba(255, 255, 255, 0.45);
-  --surface-translucent: rgba(255, 255, 255, 0.10);
-  --surface-translucent-hover: rgba(255, 255, 255, 0.16);
-  --surface-translucent-active: rgba(255, 255, 255, 0.22);
-  --border-translucent: rgba(255, 255, 255, 0.18);
+  /* fg on the colored surface */
+  --fg: #F5F1EA;                 /* warm off-white (not pure #FFF) */
+  --fg-muted: rgba(245, 241, 234, 0.62);
+  --fg-faint: rgba(245, 241, 234, 0.35);
+  --fg-strong: #FFFFFF;
+  --surface-translucent: rgba(245, 241, 234, 0.08);
+  --surface-translucent-hover: rgba(245, 241, 234, 0.14);
+  --surface-translucent-active: rgba(245, 241, 234, 0.22);
+  --border-translucent: rgba(245, 241, 234, 0.16);
 
-  /* neutral panel (task list, settings cards) */
-  --panel-bg: #F4F0EA;
-  --panel-fg: #1F2937;
-  --panel-fg-muted: #6B7280;
-  --panel-border: #E5E1DB;
+  /* neutral panel — kraft/paper tone, warmer than typical white */
+  --panel-bg: #ECE6DC;
+  --panel-fg: #2A2620;
+  --panel-fg-muted: #74695B;
+  --panel-border: #DDD5C7;
 
-  /* type scale */
+  /* type — Space Grotesk for display, Inter for body */
+  --font-display: "Space Grotesk", "Inter", "Segoe UI", system-ui, sans-serif;
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
-  --fs-timer: 88px;
+
+  --fs-timer: 76px;
   --fs-title: 18px;
   --fs-body: 14px;
   --fs-small: 13px;
@@ -37,12 +43,14 @@
   --lh-tight: 1.0;
   --lh-normal: 1.5;
   --lh-title: 1.3;
-  --tracking-label: 0.08em;
+  --tracking-label: 0.14em;     /* wider tracking for label text */
+  --tracking-display: -0.03em;  /* tighter for the big number */
 
-  /* shape */
+  /* shape — softer corners, plus a deliberate pill for primary */
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
   --radius-pill: 999px;
 
   /* spacing */
@@ -54,25 +62,29 @@
   --space-6: 24px;
   --space-8: 32px;
 
+  /* timer ring — drawn in SVG, parametrised here */
+  --ring-size: 248px;
+  --ring-stroke: 4px;
+  --ring-track: rgba(245, 241, 234, 0.14);
+  --ring-progress: rgba(245, 241, 234, 0.92);
+
   /* motion */
   --t-fast: 120ms ease;
   --t-base: 200ms ease;
-  --t-phase: 360ms ease;
+  --t-phase: 480ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* phase-driven accent: --accent is the current background. */
 :root,
 body[data-phase="pomodoro"] { --accent: var(--phase-pomodoro); }
 body[data-phase="short_break"] { --accent: var(--phase-short-break); }
 body[data-phase="long_break"] { --accent: var(--phase-long-break); }
 body[data-phase="stopped"] { --accent: var(--phase-stopped); }
 
-/* dark mode adjustments for the neutral panel */
 @media (prefers-color-scheme: dark) {
   :root {
-    --panel-bg: #1F2937;
-    --panel-fg: #F3F4F6;
-    --panel-fg-muted: #9CA3AF;
-    --panel-border: rgba(255, 255, 255, 0.08);
+    --panel-bg: #1B1A18;
+    --panel-fg: #ECE6DC;
+    --panel-fg-muted: #8B8276;
+    --panel-border: rgba(245, 241, 234, 0.08);
   }
 }
