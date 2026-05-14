@@ -64,6 +64,16 @@ npm run build       # cargo tauri build — produces MSI + NSIS in app/src-tauri
 | `npm run format` | Format JS/CSS/HTML with Prettier              |
 | `npm run check`  | `cargo check` + `cargo clippy` + format check |
 
+## Release artifacts
+
+`npm run build` produces:
+
+- `app/src-tauri/target/release/focustimer.exe` (~5 MB, LTO+strip).
+- `app/src-tauri/target/release/bundle/nsis/FocusTimer_<version>_x64-setup.exe` (~2.4 MB).
+
+The installer is unsigned; Windows SmartScreen will warn on first run
+until we attach an Authenticode signature (v2 backlog).
+
 ## Manual QA checklist
 
 Run `npm run dev` and walk through:
