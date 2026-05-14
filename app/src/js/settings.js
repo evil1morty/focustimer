@@ -44,9 +44,14 @@ function setView(view) {
   els.panel.hidden = view !== "settings";
 }
 
+function applyTheme(theme) {
+  document.body.dataset.theme = theme || "system";
+}
+
 /** @param {import("./api.js").AppSettings} s */
 function render(s) {
   current = s;
+  applyTheme(s.theme);
   els.pomodoro.value = s.pomodoro_min;
   els.pomodoroVal.textContent = `${s.pomodoro_min} min`;
   els.shortBreak.value = s.short_break_min;
@@ -145,6 +150,7 @@ function bindControls() {
     const btn = e.target.closest("button[data-val]");
     if (!btn) return;
     current.theme = btn.dataset.val;
+    applyTheme(current.theme);
     els.themeSeg.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
     scheduleSave();
   });

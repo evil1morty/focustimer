@@ -88,8 +88,17 @@ body[data-phase="stopped"] {
   --accent: var(--phase-stopped);
 }
 
+/* Forced dark variant of the neutral panel. */
+body[data-theme="dark"] {
+  --panel-bg: #1b1a18;
+  --panel-fg: #ece6dc;
+  --panel-fg-muted: #8b8276;
+  --panel-border: rgba(245, 241, 234, 0.08);
+}
+
+/* "system" follows the OS preference. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  body[data-theme="system"] {
     --panel-bg: #1b1a18;
     --panel-fg: #ece6dc;
     --panel-fg-muted: #8b8276;
