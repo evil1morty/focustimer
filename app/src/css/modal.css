@@ -14,6 +14,11 @@
   padding: var(--space-4);
   background: rgba(0, 0, 0, 0.42);
   opacity: 0;
+  /* Until .is-open is set, the backdrop is up but invisible — without
+     this, the fixed/full-screen element ate every click underneath
+     during the 180ms fade and made the whole app feel frozen after a
+     delete-confirm dismissed. */
+  pointer-events: none;
   transition: opacity 180ms ease;
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
@@ -21,6 +26,16 @@
 
 .modal-backdrop.is-open {
   opacity: 1;
+  pointer-events: auto;
+}
+
+/* The `hidden` HTML attribute should remove the element from layout
+   entirely. Without an explicit rule the .modal-backdrop's own
+   display:flex (specificity 0-0-1) wins over the UA's [hidden] rule
+   because author CSS beats UA CSS in the cascade. Explicit author rule
+   at 0-1-1 fixes that. */
+.modal-backdrop[hidden] {
+  display: none;
 }
 
 .modal {
