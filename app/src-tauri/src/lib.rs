@@ -2,6 +2,8 @@ mod audio;
 mod db;
 mod error;
 mod hotkeys;
+#[cfg(windows)]
+mod lock_watch;
 mod notify;
 mod settings;
 mod stats;
@@ -28,6 +30,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(hotkeys::plugin(hotkey_bindings.clone()))
         .manage(hotkey_bindings)
         .setup(|app| {
@@ -43,6 +49,9 @@ pub fn run() {
             notify::wire(&handle, settings_store.clone());
             tray::init(&handle)?;
             hotkeys::init(&handle, &settings_store);
+            apply_autostart(&handle, &settings_store.lock());
+            #[cfg(windows)]
+            lock_watch::spawn(handle.clone(), settings_store.clone());
             wire_window_close(&handle, settings_store.clone());
             wire_settings_change(&handle, settings_store);
             Ok(())
@@ -75,8 +84,24 @@ fn wire_settings_change(app: &tauri::AppHandle, _settings: SettingsStore) {
     app.listen("settings://changed", move |event| {
         if let Ok(new_settings) = serde_json::from_str::<AppSettings>(event.payload()) {
             hotkeys::apply(&app_handle, &new_settings);
+            apply_autostart(&app_handle, &new_settings);
         }
     });
+}
+
+fn apply_autostart(app: &tauri::AppHandle, settings: &AppSettings) {
+    use tauri_plugin_autostart::ManagerExt;
+    let manager = app.autolaunch();
+    let currently = manager.is_enabled().unwrap_or(false);
+    if settings.autostart && !currently {
+        if let Err(e) = manager.enable() {
+            eprintln!("autostart enable failed: {e}");
+        }
+    } else if !settings.autostart && currently {
+        if let Err(e) = manager.disable() {
+            eprintln!("autostart disable failed: {e}");
+        }
+    }
 }
 
 fn wire_window_close(app: &tauri::AppHandle, settings: SettingsStore) {
