@@ -150,13 +150,5 @@
   line-height: 1.5;
 }
 
-body[data-view="stats"] .timer-screen,
-body[data-view="stats"] .task-panel,
-body[data-view="stats"] .settings-screen {
-  display: none;
-}
-
-body[data-view="timer"] .stats-screen[hidden],
-body[data-view="settings"] .stats-screen {
-  display: none;
-}
+/* View-switching rules now live in base.css (single source of truth on
+   body[data-view]). Stats-specific layout stays in this file. */

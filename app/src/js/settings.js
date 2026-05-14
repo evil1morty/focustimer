@@ -43,8 +43,8 @@ let current = null;
 let saveTimer = null;
 
 function setView(view) {
+  // Single source of truth — CSS keys hide/show off body[data-view] alone.
   document.body.dataset.view = view;
-  els.panel.hidden = view !== "settings";
 }
 
 function applyTheme(theme) {

@@ -97,7 +97,8 @@ select:focus-visible,
 .app-header,
 .timer-screen,
 .task-panel,
-.settings-screen {
+.settings-screen,
+.stats-screen {
   position: relative;
   z-index: 1;
 }
@@ -110,12 +111,27 @@ select:focus-visible,
   color: var(--fg-muted);
 }
 
-/* View switching driven by body[data-view]. */
-body[data-view="settings"] .timer-screen,
-body[data-view="settings"] .task-panel {
+/*
+ * View switching — single source of truth on body[data-view]. The
+ * settings and stats panels are hidden by default; the active view
+ * unhides exactly one. Previously the toggle was split across
+ * body[data-view] AND a per-panel `hidden` attribute, which let the
+ * panel flash through for one frame between the two synchronous JS
+ * writes when navigating back to the timer.
+ */
+.settings-screen,
+.stats-screen {
   display: none;
 }
 
-body[data-view="timer"] .settings-screen[hidden] {
+body[data-view="settings"] .settings-screen,
+body[data-view="stats"] .stats-screen {
+  display: flex;
+}
+
+body[data-view="settings"] .timer-screen,
+body[data-view="settings"] .task-panel,
+body[data-view="stats"] .timer-screen,
+body[data-view="stats"] .task-panel {
   display: none;
 }

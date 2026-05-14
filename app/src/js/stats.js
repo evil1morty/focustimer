@@ -18,7 +18,6 @@ const els = {
 
 function setView(view) {
   document.body.dataset.view = view;
-  els.panel.hidden = view !== "stats";
 }
 
 function fmtHours(seconds) {
