@@ -7,6 +7,7 @@ import {
   tasksReorder,
   tasksSetCurrent,
   tasksUpdate,
+  timerStart,
 } from "./api.js";
 
 const els = {
@@ -38,6 +39,12 @@ function toggleDrawer() {
 /** @type {import("./api.js").Task[]} */
 let tasks = [];
 let dragId = null;
+/**
+ * Cached timer state — populated from TIMER_TICK so the drawer handle and
+ * task rows can reflect whether a pomodoro is currently in progress for the
+ * active task without polling.
+ */
+let timerState = { phase: "stopped", isRunning: false };
 /** @type {HTMLElement|null} */
 let dropIndicator = null;
 
@@ -71,6 +78,9 @@ function renderTaskRow(task) {
   if (task.completed) li.classList.add("is-done");
   li.draggable = true;
   const safeTitle = escapeHtml(task.title);
+  const playLabel = task.is_current
+    ? "Start a pomodoro on this task"
+    : "Pick and start this task";
   li.innerHTML = `
     <button class="task-check" data-act="toggle" aria-label="Toggle complete">
       <span class="check-box"></span>
@@ -80,17 +90,40 @@ function renderTaskRow(task) {
             aria-label="${task.done_pomodoros} of ${task.est_pomodoros} pomodoros — click to edit">
       ${task.done_pomodoros}/${task.est_pomodoros}
     </button>
+    <button class="task-play" data-act="play" title="Start working on this task"
+            aria-label="${playLabel}">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+        <polygon points="6 4 20 12 6 20 6 4" />
+      </svg>
+    </button>
     <button class="task-del" data-act="del" aria-label="Delete">×</button>
   `;
   return li;
+}
+
+function renderHandle(current) {
+  if (!els.count) return;
+  const handleLabel = els.handle?.querySelector(".label");
+  const open = tasks.filter((t) => !t.completed).length;
+  const runningCurrent =
+    current && timerState.isRunning && timerState.phase === "pomodoro";
+  if (runningCurrent) {
+    if (handleLabel) handleLabel.textContent = "Now";
+    els.count.textContent = current.title;
+    els.handle?.classList.add("is-running");
+  } else {
+    if (handleLabel) handleLabel.textContent = "Tasks";
+    els.count.textContent = tasks.length ? `${open} open / ${tasks.length}` : "";
+    els.handle?.classList.remove("is-running");
+  }
 }
 
 function render() {
   els.list.innerHTML = "";
   for (const t of tasks) els.list.appendChild(renderTaskRow(t));
   const open = tasks.filter((t) => !t.completed).length;
-  els.count.textContent = tasks.length ? `${open} open / ${tasks.length}` : "";
   const current = tasks.find((t) => t.is_current && !t.completed);
+  renderHandle(current);
   if (els.currentTaskTitle) {
     let label;
     let clickable = false;
@@ -213,6 +246,11 @@ async function handleClick(e) {
     if (confirm(`Delete "${task.title}"?`)) await tasksDelete(id);
   } else if (act === "edit-est") {
     startEditEst(li.querySelector(".task-count"), task);
+  } else if (act === "play") {
+    if (task.completed) return;
+    await tasksSetCurrent(id);
+    await timerStart("pomodoro");
+    closeDrawer();
   } else if (!task.completed) {
     await tasksSetCurrent(id);
     flashSelection(id);
@@ -314,5 +352,15 @@ export function initTasks() {
   listen(Events.TASKS_CHANGED, (payload) => {
     tasks = payload;
     render();
+  });
+  listen(Events.TIMER_TICK, (snap) => {
+    if (!snap) return;
+    const changed =
+      snap.phase !== timerState.phase || snap.is_running !== timerState.isRunning;
+    timerState = { phase: snap.phase, isRunning: snap.is_running };
+    if (changed) {
+      const current = tasks.find((t) => t.is_current && !t.completed);
+      renderHandle(current);
+    }
   });
 }

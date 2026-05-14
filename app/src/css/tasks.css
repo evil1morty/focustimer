@@ -343,3 +343,106 @@ body[data-tasks="open"] .task-drawer-handle .chevron {
   background: rgba(0, 0, 0, 0.08);
   color: var(--panel-fg);
 }
+
+/* Play button — the "start working on this" CTA. Always visible on the
+   current task and on row hover; tinted in the accent so it reads as the
+   primary action of the row. */
+.task-play {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid transparent;
+  opacity: 0;
+  transition:
+    opacity var(--t-fast),
+    background-color var(--t-fast),
+    border-color var(--t-fast),
+    transform var(--t-fast);
+}
+
+.task-row:hover .task-play,
+.task-row.is-current .task-play {
+  opacity: 1;
+}
+
+.task-play:hover {
+  background: var(--accent);
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+.task-play:active {
+  transform: scale(0.9);
+}
+
+.task-row.is-done .task-play {
+  display: none;
+}
+
+/* Drawer handle "Now: <task>" state when a pomodoro is running. */
+.task-drawer-handle.is-running .task-panel-count {
+  color: var(--panel-fg);
+  font-weight: 500;
+  font-variant-numeric: normal;
+  letter-spacing: 0;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-drawer-handle.is-running .label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.task-drawer-handle.is-running .label::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: handle-pulse 1.6s ease-out infinite;
+}
+
+@keyframes handle-pulse {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 var(--accent);
+  }
+  70% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* Pulse the current task's play icon while a pomodoro is in progress. */
+body[data-phase="pomodoro"] .task-row.is-current .task-play {
+  background: var(--accent);
+  color: var(--fg);
+  animation: task-play-pulse 1.6s ease-out infinite;
+}
+
+@keyframes task-play-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.25);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
