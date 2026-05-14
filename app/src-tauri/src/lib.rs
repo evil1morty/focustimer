@@ -73,6 +73,7 @@ pub fn run() {
             settings::settings_get,
             settings::settings_set,
             stats::stats_summary,
+            audio::audio_preview,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

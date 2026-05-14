@@ -149,6 +149,11 @@ export const settingsSet = (settings) => invoke("settings_set", { settings });
 /** @returns {Promise<StatsSummary>} */
 export const statsSummary = () => invoke("stats_summary");
 
+/* --------- Audio commands ---------- */
+
+/** @param {string} sound @param {number} volume */
+export const audioPreview = (sound, volume) => invoke("audio_preview", { sound, volume });
+
 /* --------- Event channels ---------- */
 
 export const Events = Object.freeze({

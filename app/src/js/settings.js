@@ -1,4 +1,4 @@
-import { Events, listen, settingsGet, settingsSet } from "./api.js";
+import { audioPreview, Events, listen, settingsGet, settingsSet } from "./api.js";
 
 const els = {
   panel: document.getElementById("settings-screen"),
@@ -33,6 +33,9 @@ const els = {
 
   autostart: document.getElementById("set-autostart"),
   minimizeToTray: document.getElementById("set-minimize-to-tray"),
+
+  alarmPreview: document.getElementById("set-alarm-preview"),
+  tickingPreview: document.getElementById("set-ticking-preview"),
 };
 
 /** @type {import("./api.js").AppSettings|null} */
@@ -146,6 +149,17 @@ function bindControls() {
     el.addEventListener("input", scheduleSave);
     el.addEventListener("change", scheduleSave);
   }
+  els.alarmPreview?.addEventListener("click", () => {
+    const sound = els.alarmSound.value;
+    const volume = Number(els.alarmVolume.value) / 100;
+    audioPreview(sound, volume).catch((e) => console.error("audio_preview failed", e));
+  });
+  els.tickingPreview?.addEventListener("click", () => {
+    const sound = els.tickingSound.value;
+    const volume = Number(els.tickingVolume.value) / 100;
+    audioPreview(sound, volume).catch((e) => console.error("audio_preview failed", e));
+  });
+
   els.themeSeg.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-val]");
     if (!btn) return;

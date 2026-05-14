@@ -22,6 +22,10 @@ enum AudioCmd {
     PlayAlarm { sound: String, volume: f32 },
     StartTicking { sound: String, volume: f32 },
     StopTicking,
+    /// Play a sound on a dedicated sink, stopping any previous preview.
+    /// Truncated to `max_ms` so picking the 30-second brown-noise loop
+    /// doesn't lock the preview slot for half a minute.
+    Preview { sound: String, volume: f32, max_ms: u64 },
 }
 
 #[derive(Clone)]
@@ -44,6 +48,13 @@ impl AudioController {
     }
     pub fn stop_ticking(&self) {
         let _ = self.tx.send(AudioCmd::StopTicking);
+    }
+    pub fn preview(&self, sound: &str, volume: f32) {
+        let _ = self.tx.send(AudioCmd::Preview {
+            sound: sound.into(),
+            volume,
+            max_ms: 1500,
+        });
     }
 }
 
@@ -91,6 +102,7 @@ fn run_audio_loop(rx: mpsc::Receiver<AudioCmd>, sounds_dir: PathBuf) {
         }
     };
     let mut ticking_sink: Option<Sink> = None;
+    let mut preview_sink: Option<Sink> = None;
 
     while let Ok(cmd) = rx.recv() {
         match cmd {
@@ -136,6 +148,37 @@ fn run_audio_loop(rx: mpsc::Receiver<AudioCmd>, sounds_dir: PathBuf) {
                     s.stop();
                 }
             }
+            AudioCmd::Preview {
+                sound,
+                volume,
+                max_ms,
+            } => {
+                // Stop any in-flight preview so spamming the button doesn't
+                // pile sounds on top of each other.
+                if let Some(s) = preview_sink.take() {
+                    s.stop();
+                }
+                if sound == "off" {
+                    continue;
+                }
+                let Some(bytes) = sounds.get(&sound) else {
+                    continue;
+                };
+                let Ok(sink) = Sink::try_new(&stream_handle) else {
+                    continue;
+                };
+                let Ok(decoder) = Decoder::new(Cursor::new(SharedBytes(Arc::clone(bytes)))) else {
+                    continue;
+                };
+                sink.set_volume(volume.clamp(0.0, 1.0));
+                sink.append(decoder.take_duration(std::time::Duration::from_millis(max_ms)));
+                preview_sink = Some(sink);
+            }
         }
     }
+}
+
+#[tauri::command]
+pub fn audio_preview(audio: tauri::State<AudioController>, sound: String, volume: f32) {
+    audio.preview(&sound, volume);
 }
