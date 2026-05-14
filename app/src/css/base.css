@@ -4,6 +4,17 @@
   box-sizing: border-box;
 }
 
+/*
+ * Belt-and-suspenders: the HTML5 `hidden` attribute is supposed to hide
+ * an element, but author rules like `.modal-backdrop { display: flex }`
+ * beat the UA's `[hidden] { display: none }` in the cascade. Declaring
+ * the rule as author-level `!important` short-circuits that whole class
+ * of bug — set `.hidden = true` and the element is gone.
+ */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
