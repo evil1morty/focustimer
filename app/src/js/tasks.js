@@ -9,6 +9,7 @@ import {
   tasksUpdate,
   timerStart,
 } from "./api.js";
+import { showConfirm } from "./modal.js";
 
 const els = {
   list: document.getElementById("task-list"),
@@ -243,7 +244,14 @@ async function handleClick(e) {
   if (act === "toggle") {
     await tasksUpdate(id, { completed: !task.completed });
   } else if (act === "del") {
-    if (confirm(`Delete "${task.title}"?`)) await tasksDelete(id);
+    const ok = await showConfirm({
+      title: "Delete task?",
+      body: `"${task.title}" will be removed. This can't be undone.`,
+      confirmLabel: "Delete",
+      cancelLabel: "Keep",
+      danger: true,
+    });
+    if (ok) await tasksDelete(id);
   } else if (act === "edit-est") {
     startEditEst(li.querySelector(".task-count"), task);
   } else if (act === "play") {
