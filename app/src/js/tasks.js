@@ -41,8 +41,11 @@ function renderTaskRow(task) {
     <button class="task-check" data-act="toggle" aria-label="Toggle complete">
       <span class="check-box"></span>
     </button>
-    <span class="task-title" data-act="edit" title="Click to edit">${escapeHtml(task.title)}</span>
-    <span class="task-count">${task.done_pomodoros}/${task.est_pomodoros}</span>
+    <span class="task-title" title="Double-click to rename">${escapeHtml(task.title)}</span>
+    <button class="task-count" data-act="edit-est" title="Click to change estimate"
+            aria-label="${task.done_pomodoros} of ${task.est_pomodoros} pomodoros — click to edit">
+      ${task.done_pomodoros}/${task.est_pomodoros}
+    </button>
     <button class="task-del" data-act="del" aria-label="Delete">×</button>
   `;
   return li;
@@ -75,6 +78,36 @@ async function refresh() {
   } catch (e) {
     console.error("tasks_list failed", e);
   }
+}
+
+function startEditEst(countEl, task) {
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = "1";
+  input.max = "20";
+  input.value = String(task.est_pomodoros);
+  input.className = "task-count-edit";
+  input.setAttribute("aria-label", "Estimated pomodoros");
+  countEl.replaceWith(input);
+  input.focus();
+  input.select();
+  const commit = async () => {
+    const parsed = parseInt(input.value, 10);
+    const next = Math.max(1, Math.min(20, Number.isFinite(parsed) ? parsed : task.est_pomodoros));
+    if (next !== task.est_pomodoros) {
+      await tasksUpdate(task.id, { est_pomodoros: next });
+    } else {
+      render();
+    }
+  };
+  input.addEventListener("blur", commit, { once: true });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") input.blur();
+    if (e.key === "Escape") {
+      input.removeEventListener("blur", commit);
+      render();
+    }
+  });
 }
 
 function startInlineEdit(titleEl, task) {
@@ -114,11 +147,20 @@ async function handleClick(e) {
     await tasksUpdate(id, { completed: !task.completed });
   } else if (act === "del") {
     if (confirm(`Delete "${task.title}"?`)) await tasksDelete(id);
-  } else if (act === "edit") {
-    startInlineEdit(li.querySelector(".task-title"), task);
+  } else if (act === "edit-est") {
+    startEditEst(li.querySelector(".task-count"), task);
   } else if (!task.completed) {
     await tasksSetCurrent(id);
   }
+}
+
+function handleDblClick(e) {
+  const titleEl = e.target.closest(".task-title");
+  if (!titleEl) return;
+  const li = titleEl.closest(".task-row");
+  const id = Number(li.dataset.id);
+  const task = tasks.find((t) => t.id === id);
+  if (task) startInlineEdit(titleEl, task);
 }
 
 async function handleSubmit(e) {
@@ -164,6 +206,7 @@ async function handleDragEnd() {
 
 export function initTasks() {
   els.list.addEventListener("click", handleClick);
+  els.list.addEventListener("dblclick", handleDblClick);
   els.list.addEventListener("dragstart", handleDragStart);
   els.list.addEventListener("dragover", handleDragOver);
   els.list.addEventListener("dragend", handleDragEnd);
