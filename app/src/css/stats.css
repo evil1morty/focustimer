@@ -105,6 +105,21 @@
   margin-top: 4px;
 }
 
+.stats-empty {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  color: var(--fg-muted);
+  font-size: var(--fs-small);
+}
+
+.stats-empty p {
+  margin: 0;
+  max-width: 240px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
 body[data-view="stats"] .timer-screen,
 body[data-view="stats"] .task-panel,
 body[data-view="stats"] .settings-screen {

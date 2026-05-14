@@ -29,6 +29,12 @@
   text-overflow: ellipsis;
 }
 
+.current-task-title.is-empty {
+  font-weight: 400;
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
 .ring-wrap {
   position: relative;
   width: var(--ring-size);

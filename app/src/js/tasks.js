@@ -55,11 +55,16 @@ function render() {
   els.count.textContent = tasks.length ? `${open} open / ${tasks.length}` : "";
   const current = tasks.find((t) => t.is_current && !t.completed);
   if (els.currentTaskTitle) {
-    els.currentTaskTitle.textContent = current
-      ? current.title
-      : tasks.length
-        ? "— pick a task —"
-        : "— no task —";
+    let label;
+    if (current) {
+      label = current.title;
+    } else if (tasks.length > 0) {
+      label = "Pick a task below to track focus";
+    } else {
+      label = "Add a task below ↓";
+    }
+    els.currentTaskTitle.textContent = label;
+    els.currentTaskTitle.classList.toggle("is-empty", !current);
   }
 }
 

@@ -11,6 +11,9 @@ const els = {
   axis: document.getElementById("bar-axis"),
   totalAllTime: document.getElementById("totals-all-time"),
   totalFocus: document.getElementById("totals-focus"),
+  empty: document.getElementById("stats-empty"),
+  kpis: document.getElementById("kpi-row"),
+  sections: document.querySelectorAll(".stats-screen .stats-section"),
 };
 
 function setView(view) {
@@ -56,6 +59,14 @@ function renderChart(s) {
 
 /** @param {import("./api.js").StatsSummary} s */
 function render(s) {
+  const isEmpty = s.all_time === 0;
+  els.empty.hidden = !isEmpty;
+  els.kpis.hidden = isEmpty;
+  els.sections.forEach((sec) => {
+    sec.hidden = isEmpty;
+  });
+  if (isEmpty) return;
+
   els.today.textContent = String(s.today);
   els.week.textContent = String(s.this_week);
   els.streak.textContent = String(s.streak_days);
