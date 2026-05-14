@@ -6,23 +6,50 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
+use crate::error::AppResult;
 use crate::timer::{SessionTemplate, TimerEngine};
 
 pub const SETTINGS_CHANGED: &str = "settings://changed";
 
-fn default_pomodoro_min() -> u32 { 25 }
-fn default_short_break_min() -> u32 { 5 }
-fn default_long_break_min() -> u32 { 15 }
-fn default_cycles() -> u32 { 4 }
-fn default_volume() -> f32 { 0.8 }
-fn default_alarm_sound() -> String { "bell".into() }
-fn default_ticking_sound() -> String { "off".into() }
-fn default_theme() -> String { "system".into() }
-fn default_hotkey_toggle() -> String { "Ctrl+Alt+P".into() }
-fn default_hotkey_skip() -> String { "Ctrl+Alt+S".into() }
-fn default_hotkey_reset() -> String { "Ctrl+Alt+R".into() }
-fn default_true() -> bool { true }
-fn default_false() -> bool { false }
+fn default_pomodoro_min() -> u32 {
+    25
+}
+fn default_short_break_min() -> u32 {
+    5
+}
+fn default_long_break_min() -> u32 {
+    15
+}
+fn default_cycles() -> u32 {
+    4
+}
+fn default_volume() -> f32 {
+    0.8
+}
+fn default_alarm_sound() -> String {
+    "bell".into()
+}
+fn default_ticking_sound() -> String {
+    "off".into()
+}
+fn default_theme() -> String {
+    "system".into()
+}
+fn default_hotkey_toggle() -> String {
+    "Ctrl+Alt+P".into()
+}
+fn default_hotkey_skip() -> String {
+    "Ctrl+Alt+S".into()
+}
+fn default_hotkey_reset() -> String {
+    "Ctrl+Alt+R".into()
+}
+fn default_true() -> bool {
+    true
+}
+fn default_false() -> bool {
+    false
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
@@ -98,7 +125,9 @@ fn settings_path(app: &AppHandle) -> Result<PathBuf> {
 }
 
 fn load_from_disk(app: &AppHandle) -> AppSettings {
-    let Ok(path) = settings_path(app) else { return AppSettings::default() };
+    let Ok(path) = settings_path(app) else {
+        return AppSettings::default();
+    };
     match std::fs::read_to_string(&path) {
         Ok(s) => serde_json::from_str(&s).unwrap_or_default(),
         Err(_) => AppSettings::default(),
@@ -139,12 +168,12 @@ pub fn settings_set(
     store: State<SettingsStore>,
     engine: State<TimerEngine>,
     settings: AppSettings,
-) -> Result<AppSettings, String> {
+) -> AppResult<AppSettings> {
     {
         let mut guard = store.lock();
         *guard = settings.clone();
     }
-    save_to_disk(&app, &settings).map_err(|e| e.to_string())?;
+    save_to_disk(&app, &settings)?;
     apply_to_timer(&settings, &engine);
     let _ = app.emit(SETTINGS_CHANGED, &settings);
     Ok(settings)

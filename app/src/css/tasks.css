@@ -1,0 +1,198 @@
+/* Task panel + task rows: anchored to the bottom, kraft/paper toned. */
+
+.task-panel {
+  flex: 0 0 auto;
+  max-height: 45%;
+  background: var(--panel-bg);
+  color: var(--panel-fg);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  min-height: 110px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.task-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.task-panel .label {
+  color: var(--panel-fg-muted);
+}
+
+.task-panel-count {
+  font-size: var(--fs-label);
+  color: var(--panel-fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.add-task input {
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition:
+    border-color var(--t-fast),
+    background-color var(--t-fast);
+}
+
+.add-task input::placeholder {
+  color: var(--panel-fg-muted);
+}
+.add-task input:focus {
+  border-color: var(--accent);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.task-list {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.task-list:empty::before {
+  content: "Pick what to focus on first.";
+  display: block;
+  text-align: center;
+  color: var(--panel-fg-muted);
+  font-size: var(--fs-small);
+  padding: var(--space-3) 0;
+}
+
+.task-list::-webkit-scrollbar {
+  width: 6px;
+}
+.task-list::-webkit-scrollbar-thumb {
+  background: var(--panel-border);
+  border-radius: 3px;
+}
+
+/* row */
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+  position: relative;
+}
+
+.task-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.task-row.is-current {
+  background: rgba(0, 0, 0, 0.06);
+  border-left: 3px solid var(--accent);
+  padding-left: 7px;
+}
+
+.task-row.is-done .task-title {
+  text-decoration: line-through;
+  color: var(--panel-fg-muted);
+}
+
+.task-row.dragging {
+  opacity: 0.4;
+}
+
+.task-check {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-check .check-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--panel-border);
+  background: transparent;
+  transition:
+    background-color var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.task-row.is-current .task-check .check-box {
+  border-color: var(--accent);
+}
+
+.task-row.is-done .task-check .check-box {
+  background: var(--accent);
+  border-color: var(--accent);
+  position: relative;
+}
+
+.task-row.is-done .task-check .check-box::after {
+  content: "";
+  position: absolute;
+  inset: 4px 3px;
+  border-left: 1.6px solid var(--panel-bg);
+  border-bottom: 1.6px solid var(--panel-bg);
+  transform: rotate(-45deg);
+}
+
+.task-title {
+  flex: 1 1 auto;
+  font-size: var(--fs-body);
+  color: var(--panel-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-title-edit {
+  flex: 1 1 auto;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  outline: none;
+  font: inherit;
+  color: var(--panel-fg);
+}
+
+.task-count {
+  font-size: var(--fs-label);
+  color: var(--panel-fg-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.task-del {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--panel-fg-muted);
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0;
+  transition:
+    opacity var(--t-fast),
+    background-color var(--t-fast),
+    color var(--t-fast);
+}
+
+.task-row:hover .task-del {
+  opacity: 1;
+}
+.task-del:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--panel-fg);
+}

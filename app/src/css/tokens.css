@@ -9,26 +9,26 @@
 
 :root {
   /* phase palette — muted, sophisticated, low-saturation */
-  --phase-pomodoro: #7C4A3A;     /* warm clay / terracotta */
-  --phase-short-break: #5C7E6B;  /* sage */
-  --phase-long-break: #3F4E6B;   /* dusk indigo */
-  --phase-stopped: #23272F;      /* charcoal */
+  --phase-pomodoro: #7c4a3a; /* warm clay / terracotta */
+  --phase-short-break: #5c7e6b; /* sage */
+  --phase-long-break: #3f4e6b; /* dusk indigo */
+  --phase-stopped: #23272f; /* charcoal */
 
   /* fg on the colored surface */
-  --fg: #F5F1EA;                 /* warm off-white (not pure #FFF) */
+  --fg: #f5f1ea; /* warm off-white (not pure #FFF) */
   --fg-muted: rgba(245, 241, 234, 0.62);
   --fg-faint: rgba(245, 241, 234, 0.35);
-  --fg-strong: #FFFFFF;
+  --fg-strong: #ffffff;
   --surface-translucent: rgba(245, 241, 234, 0.08);
   --surface-translucent-hover: rgba(245, 241, 234, 0.14);
   --surface-translucent-active: rgba(245, 241, 234, 0.22);
   --border-translucent: rgba(245, 241, 234, 0.16);
 
   /* neutral panel — kraft/paper tone, warmer than typical white */
-  --panel-bg: #ECE6DC;
-  --panel-fg: #2A2620;
-  --panel-fg-muted: #74695B;
-  --panel-border: #DDD5C7;
+  --panel-bg: #ece6dc;
+  --panel-fg: #2a2620;
+  --panel-fg-muted: #74695b;
+  --panel-border: #ddd5c7;
 
   /* type — Space Grotesk for display, Inter for body */
   --font-display: "Space Grotesk", "Inter", "Segoe UI", system-ui, sans-serif;
@@ -40,11 +40,11 @@
   --fs-body: 14px;
   --fs-small: 13px;
   --fs-label: 11px;
-  --lh-tight: 1.0;
+  --lh-tight: 1;
   --lh-normal: 1.5;
   --lh-title: 1.3;
-  --tracking-label: 0.14em;     /* wider tracking for label text */
-  --tracking-display: -0.03em;  /* tighter for the big number */
+  --tracking-label: 0.14em; /* wider tracking for label text */
+  --tracking-display: -0.03em; /* tighter for the big number */
 
   /* shape — softer corners, plus a deliberate pill for primary */
   --radius-sm: 6px;
@@ -75,16 +75,24 @@
 }
 
 :root,
-body[data-phase="pomodoro"] { --accent: var(--phase-pomodoro); }
-body[data-phase="short_break"] { --accent: var(--phase-short-break); }
-body[data-phase="long_break"] { --accent: var(--phase-long-break); }
-body[data-phase="stopped"] { --accent: var(--phase-stopped); }
+body[data-phase="pomodoro"] {
+  --accent: var(--phase-pomodoro);
+}
+body[data-phase="short_break"] {
+  --accent: var(--phase-short-break);
+}
+body[data-phase="long_break"] {
+  --accent: var(--phase-long-break);
+}
+body[data-phase="stopped"] {
+  --accent: var(--phase-stopped);
+}
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --panel-bg: #1B1A18;
-    --panel-fg: #ECE6DC;
-    --panel-fg-muted: #8B8276;
+    --panel-bg: #1b1a18;
+    --panel-fg: #ece6dc;
+    --panel-fg-muted: #8b8276;
     --panel-border: rgba(245, 241, 234, 0.08);
   }
 }

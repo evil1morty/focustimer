@@ -62,11 +62,7 @@ pub fn init(app: &AppHandle) -> AudioController {
     let sounds_dir = app
         .path()
         .resolve("sounds", BaseDirectory::Resource)
-        .or_else(|_| {
-            app.path()
-                .resource_dir()
-                .map(|d| d.join("sounds"))
-        })
+        .or_else(|_| app.path().resource_dir().map(|d| d.join("sounds")))
         .unwrap_or_else(|_| PathBuf::from("sounds"));
 
     let (tx, rx) = mpsc::channel::<AudioCmd>();
@@ -91,9 +87,15 @@ fn run_audio_loop(rx: mpsc::Receiver<AudioCmd>, sounds_dir: PathBuf) {
                 if sound == "off" {
                     continue;
                 }
-                let Some(bytes) = sounds.get(&sound) else { continue };
-                let Ok(sink) = Sink::try_new(&stream_handle) else { continue };
-                let Ok(decoder) = Decoder::new(Cursor::new(bytes.clone())) else { continue };
+                let Some(bytes) = sounds.get(&sound) else {
+                    continue;
+                };
+                let Ok(sink) = Sink::try_new(&stream_handle) else {
+                    continue;
+                };
+                let Ok(decoder) = Decoder::new(Cursor::new(bytes.clone())) else {
+                    continue;
+                };
                 sink.set_volume(volume.clamp(0.0, 1.0));
                 sink.append(decoder);
                 sink.detach();
@@ -105,9 +107,15 @@ fn run_audio_loop(rx: mpsc::Receiver<AudioCmd>, sounds_dir: PathBuf) {
                 if sound == "off" {
                     continue;
                 }
-                let Some(bytes) = sounds.get(&sound) else { continue };
-                let Ok(sink) = Sink::try_new(&stream_handle) else { continue };
-                let Ok(decoder) = Decoder::new(Cursor::new(bytes.clone())) else { continue };
+                let Some(bytes) = sounds.get(&sound) else {
+                    continue;
+                };
+                let Ok(sink) = Sink::try_new(&stream_handle) else {
+                    continue;
+                };
+                let Ok(decoder) = Decoder::new(Cursor::new(bytes.clone())) else {
+                    continue;
+                };
                 sink.set_volume(volume.clamp(0.0, 1.0));
                 sink.append(decoder.buffered().repeat_infinite());
                 ticking_sink = Some(sink);

@@ -1,5 +1,12 @@
-const { invoke } = window.__TAURI__.core;
-const { listen } = window.__TAURI__.event;
+import {
+  Events,
+  listen,
+  timerPause,
+  timerResume,
+  timerSkip,
+  timerSnapshot,
+  timerStart,
+} from "./js/api.js";
 import { initTasks } from "./js/tasks.js";
 import { initSettings } from "./js/settings.js";
 
@@ -10,14 +17,6 @@ const PHASE_LABEL = {
   long_break: "Long break",
 };
 
-const PHASE_TIMER_DEFAULT = {
-  pomodoro: "pomodoro_ms",
-  short_break: "short_break_ms",
-  long_break: "long_break_ms",
-};
-
-const RING_CIRCUMFERENCE = 2 * Math.PI * 46; // matches r=46 in the SVG
-
 const els = {
   body: document.body,
   display: document.getElementById("timer-display"),
@@ -26,9 +25,11 @@ const els = {
   cycleBar: document.getElementById("cycle-bar"),
   phaseLabel: document.getElementById("phase-label"),
   ringProgress: document.getElementById("ring-progress"),
-  currentTaskTitle: document.getElementById("current-task-title"),
 };
 
+const RING_CIRCUMFERENCE = 2 * Math.PI * 46;
+
+/** @type {import("./js/api.js").TimerSnapshot|null} */
 let lastSnap = null;
 
 function fmtMs(ms) {
@@ -64,84 +65,61 @@ function renderCycleBar(snap) {
 }
 
 function renderRing(snap) {
-  const total = snap.phase === "stopped"
-    ? snap.template.pomodoro_ms
-    : snap.total_ms;
+  const total = snap.phase === "stopped" ? snap.template.pomodoro_ms : snap.total_ms;
   const elapsed = snap.phase === "stopped" ? 0 : snap.elapsed_ms;
   const ratio = total > 0 ? Math.min(1, elapsed / total) : 0;
-  // Ring counts DOWN — full at start, empty when phase ends.
-  const offset = RING_CIRCUMFERENCE * ratio;
-  els.ringProgress.style.strokeDashoffset = offset.toString();
+  els.ringProgress.style.strokeDashoffset = (RING_CIRCUMFERENCE * ratio).toString();
 }
 
 function render(snap) {
   lastSnap = snap;
-  const phase = snap.phase;
-  els.body.dataset.phase = phase;
+  els.body.dataset.phase = snap.phase;
 
-  const showMs = phase === "stopped"
-    ? snap.template[PHASE_TIMER_DEFAULT.pomodoro]
-    : snap.remaining_ms;
+  const showMs = snap.phase === "stopped" ? snap.template.pomodoro_ms : snap.remaining_ms;
   const text = fmtMs(showMs);
   els.display.textContent = text;
-  document.title = `${text} · ${PHASE_LABEL[phase] || "FocusTimer"} — FocusTimer`;
+  document.title = `${text} · ${PHASE_LABEL[snap.phase] ?? "FocusTimer"} — FocusTimer`;
+  els.phaseLabel.textContent = PHASE_LABEL[snap.phase] ?? "FocusTimer";
 
-  els.phaseLabel.textContent = PHASE_LABEL[phase] || "FocusTimer";
-
-  let label;
-  if (snap.is_running) label = "Pause";
-  else if (snap.is_paused) label = "Resume";
-  else label = "Start";
-  els.primary.textContent = label;
+  if (snap.is_running) els.primary.textContent = "Pause";
+  else if (snap.is_paused) els.primary.textContent = "Resume";
+  else els.primary.textContent = "Start";
 
   renderRing(snap);
   renderCycleBar(snap);
 }
 
-async function refresh() {
-  const snap = await invoke("timer_snapshot");
-  render(snap);
-}
-
 async function onPrimary() {
-  if (!lastSnap) return refresh();
-  if (lastSnap.is_running) {
-    render(await invoke("timer_pause"));
-  } else if (lastSnap.is_paused) {
-    render(await invoke("timer_resume"));
-  } else {
+  if (!lastSnap) return;
+  if (lastSnap.is_running) render(await timerPause());
+  else if (lastSnap.is_paused) render(await timerResume());
+  else {
     const phase = lastSnap.phase === "stopped" ? "pomodoro" : lastSnap.phase;
-    render(await invoke("timer_start", { phase }));
+    render(await timerStart(phase));
   }
-}
-
-async function onSkip() {
-  render(await invoke("timer_skip"));
 }
 
 function bind() {
   els.primary.addEventListener("click", onPrimary);
-  els.skip.addEventListener("click", onSkip);
+  els.skip.addEventListener("click", async () => render(await timerSkip()));
 
-  // Click the phase pill to cycle phases manually (start in that phase).
   document.getElementById("phase-pill")?.addEventListener("click", async () => {
     if (!lastSnap) return;
     const order = ["pomodoro", "short_break", "long_break"];
     const cur = lastSnap.phase === "stopped" ? "pomodoro" : lastSnap.phase;
     const next = order[(order.indexOf(cur) + 1) % order.length];
-    render(await invoke("timer_start", { phase: next }));
+    render(await timerStart(next));
   });
 
   document.getElementById("btn-stats")?.addEventListener("click", () => {
     console.log("stats — TODO task #11");
   });
-
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   bind();
   initTasks();
   initSettings();
-  await refresh();
-  await listen("timer://tick", (e) => render(e.payload));
+  render(await timerSnapshot());
+  listen(Events.TIMER_TICK, render);
 });

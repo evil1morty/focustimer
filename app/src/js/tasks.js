@@ -1,5 +1,13 @@
-const { invoke } = window.__TAURI__.core;
-const { listen } = window.__TAURI__.event;
+import {
+  Events,
+  listen,
+  tasksCreate,
+  tasksDelete,
+  tasksList,
+  tasksReorder,
+  tasksSetCurrent,
+  tasksUpdate,
+} from "./api.js";
 
 const els = {
   list: document.getElementById("task-list"),
@@ -9,17 +17,26 @@ const els = {
   currentTaskTitle: document.getElementById("current-task-title"),
 };
 
+/** @type {import("./api.js").Task[]} */
 let tasks = [];
 let dragId = null;
+
+function escapeHtml(s) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 function renderTaskRow(task) {
   const li = document.createElement("li");
   li.className = "task-row";
-  li.dataset.id = task.id;
+  li.dataset.id = String(task.id);
   if (task.is_current) li.classList.add("is-current");
   if (task.completed) li.classList.add("is-done");
   li.draggable = true;
-
   li.innerHTML = `
     <button class="task-check" data-act="toggle" aria-label="Toggle complete">
       <span class="check-box"></span>
@@ -31,23 +48,11 @@ function renderTaskRow(task) {
   return li;
 }
 
-function escapeHtml(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 function render() {
   els.list.innerHTML = "";
-  for (const t of tasks) {
-    els.list.appendChild(renderTaskRow(t));
-  }
+  for (const t of tasks) els.list.appendChild(renderTaskRow(t));
   const open = tasks.filter((t) => !t.completed).length;
   els.count.textContent = tasks.length ? `${open} open / ${tasks.length}` : "";
-
   const current = tasks.find((t) => t.is_current && !t.completed);
   if (els.currentTaskTitle) {
     els.currentTaskTitle.textContent = current
@@ -58,37 +63,12 @@ function render() {
   }
 }
 
-async function loadTasks() {
+async function refresh() {
   try {
-    tasks = await invoke("tasks_list");
+    tasks = await tasksList();
     render();
   } catch (e) {
     console.error("tasks_list failed", e);
-  }
-}
-
-async function handleClick(e) {
-  const li = e.target.closest(".task-row");
-  if (!li) return;
-  const id = Number(li.dataset.id);
-  const task = tasks.find((t) => t.id === id);
-  if (!task) return;
-  const act = e.target.closest("[data-act]")?.dataset.act;
-
-  if (act === "toggle") {
-    await invoke("tasks_update", { id, patch: { completed: !task.completed } });
-  } else if (act === "del") {
-    if (confirm(`Delete "${task.title}"?`)) {
-      await invoke("tasks_delete", { id });
-    }
-  } else if (act === "edit") {
-    const titleEl = li.querySelector(".task-title");
-    startInlineEdit(titleEl, task);
-  } else {
-    // Row click (not on a control) sets as current.
-    if (!task.completed) {
-      await invoke("tasks_set_current", { id });
-    }
   }
 }
 
@@ -100,13 +80,12 @@ function startInlineEdit(titleEl, task) {
   titleEl.replaceWith(input);
   input.focus();
   input.select();
-
   const commit = async () => {
     const next = input.value.trim();
     if (next && next !== task.title) {
-      await invoke("tasks_update", { id: task.id, patch: { title: next } });
+      await tasksUpdate(task.id, { title: next });
     } else {
-      render(); // restore
+      render();
     }
   };
   input.addEventListener("blur", commit, { once: true });
@@ -119,13 +98,31 @@ function startInlineEdit(titleEl, task) {
   });
 }
 
+async function handleClick(e) {
+  const li = e.target.closest(".task-row");
+  if (!li) return;
+  const id = Number(li.dataset.id);
+  const task = tasks.find((t) => t.id === id);
+  if (!task) return;
+  const act = e.target.closest("[data-act]")?.dataset.act;
+  if (act === "toggle") {
+    await tasksUpdate(id, { completed: !task.completed });
+  } else if (act === "del") {
+    if (confirm(`Delete "${task.title}"?`)) await tasksDelete(id);
+  } else if (act === "edit") {
+    startInlineEdit(li.querySelector(".task-title"), task);
+  } else if (!task.completed) {
+    await tasksSetCurrent(id);
+  }
+}
+
 async function handleSubmit(e) {
   e.preventDefault();
   const title = els.input.value.trim();
   if (!title) return;
   els.input.value = "";
   try {
-    await invoke("tasks_create", { title, estPomodoros: 1 });
+    await tasksCreate(title, 1);
   } catch (err) {
     console.error("tasks_create failed", err);
   }
@@ -151,13 +148,13 @@ function handleDragOver(e) {
 }
 
 async function handleDragEnd() {
-  const li = els.list.querySelector(".dragging");
-  if (li) li.classList.remove("dragging");
+  els.list.querySelector(".dragging")?.classList.remove("dragging");
   if (dragId == null) return;
   dragId = null;
-  const orderedIds = Array.from(els.list.querySelectorAll(".task-row"))
-    .map((el) => Number(el.dataset.id));
-  await invoke("tasks_reorder", { orderedIds });
+  const orderedIds = Array.from(els.list.querySelectorAll(".task-row")).map((el) =>
+    Number(el.dataset.id),
+  );
+  await tasksReorder(orderedIds);
 }
 
 export function initTasks() {
@@ -166,9 +163,9 @@ export function initTasks() {
   els.list.addEventListener("dragover", handleDragOver);
   els.list.addEventListener("dragend", handleDragEnd);
   els.form.addEventListener("submit", handleSubmit);
-  loadTasks();
-  listen("tasks://changed", (e) => {
-    tasks = e.payload;
+  refresh();
+  listen(Events.TASKS_CHANGED, (payload) => {
+    tasks = payload;
     render();
   });
 }

@@ -1,8 +1,12 @@
 mod audio;
 mod db;
+mod error;
+mod notify;
 mod settings;
 mod tasks;
 mod timer;
+
+pub use error::{AppError, AppResult};
 
 use std::sync::Arc;
 
@@ -17,6 +21,7 @@ use crate::timer::{Phase, TimerSnapshot};
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             let handle = app.handle().clone();
             let pool = db::init(&handle).expect("init sqlite");
@@ -26,7 +31,8 @@ pub fn run() {
             app.manage(settings_store.clone());
             let audio = audio::init(&handle);
             app.manage(audio.clone());
-            wire_audio_events(&handle, audio, settings_store);
+            wire_audio_events(&handle, audio, settings_store.clone());
+            notify::wire(&handle, settings_store);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -51,11 +57,7 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
-fn wire_audio_events(
-    app: &tauri::AppHandle,
-    audio: AudioController,
-    settings: SettingsStore,
-) {
+fn wire_audio_events(app: &tauri::AppHandle, audio: AudioController, settings: SettingsStore) {
     // Alarm on natural phase transitions.
     let alarm_audio = audio.clone();
     let alarm_settings = settings.clone();

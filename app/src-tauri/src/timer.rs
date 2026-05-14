@@ -70,6 +70,7 @@ struct Inner {
     completed_pomodoros: u32,
     auto_start_breaks: bool,
     auto_start_pomodoros: bool,
+    announced_about_to_end: bool,
 }
 
 impl Inner {
@@ -82,6 +83,7 @@ impl Inner {
             completed_pomodoros: 0,
             auto_start_breaks: true,
             auto_start_pomodoros: false,
+            announced_about_to_end: false,
         }
     }
 
@@ -134,7 +136,7 @@ impl Inner {
             Phase::Pomodoro => {
                 let completed = self.completed_pomodoros.saturating_add(1);
                 if self.template.cycles_per_long_break > 0
-                    && completed % self.template.cycles_per_long_break == 0
+                    && completed.is_multiple_of(self.template.cycles_per_long_break)
                 {
                     Phase::LongBreak
                 } else {
@@ -149,6 +151,7 @@ impl Inner {
     fn begin_phase(&mut self, phase: Phase, autostart: bool) {
         self.phase = phase;
         self.paused_at = None;
+        self.announced_about_to_end = false;
         if autostart && phase != Phase::Stopped {
             self.started_at = Some(Instant::now());
         } else {
@@ -177,11 +180,22 @@ impl TimerEngine {
                 interval.tick().await;
                 let maybe_snapshot = {
                     let mut state = inner.lock();
-                    if state.is_running() && state.elapsed_ms() >= state.total_ms() {
+                    // About-to-end announce: 30s before phase ends, exactly once.
+                    if state.is_running()
+                        && !state.announced_about_to_end
+                        && state.total_ms() > 30_000
+                        && state.total_ms().saturating_sub(state.elapsed_ms()) <= 30_000
+                    {
+                        state.announced_about_to_end = true;
+                        let phase = state.phase;
+                        drop(state);
+                        let _ = app.emit("timer://about-to-end", &phase);
+                        // Re-acquire for the rest of the tick. Skip finished-check this tick.
+                        Some(inner.lock().snapshot())
+                    } else if state.is_running() && state.elapsed_ms() >= state.total_ms() {
                         let finished = state.phase;
                         if finished == Phase::Pomodoro {
-                            state.completed_pomodoros =
-                                state.completed_pomodoros.saturating_add(1);
+                            state.completed_pomodoros = state.completed_pomodoros.saturating_add(1);
                         }
                         let next = state.next_phase_after(finished);
                         let autostart = state.auto_start_for(next);
@@ -317,10 +331,7 @@ pub fn timer_reset(engine: State<TimerEngine>) -> TimerSnapshot {
 }
 
 #[tauri::command]
-pub fn timer_set_template(
-    engine: State<TimerEngine>,
-    template: SessionTemplate,
-) -> TimerSnapshot {
+pub fn timer_set_template(engine: State<TimerEngine>, template: SessionTemplate) -> TimerSnapshot {
     engine.set_template(template)
 }
 

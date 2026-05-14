@@ -1,10 +1,10 @@
-use anyhow::Result;
 use chrono::Utc;
 use rusqlite::{params, Row};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::db::DbPool;
+use crate::error::{AppError, AppResult};
 
 pub const TASKS_CHANGED: &str = "tasks://changed";
 
@@ -33,7 +33,7 @@ fn row_to_task(row: &Row<'_>) -> rusqlite::Result<Task> {
     })
 }
 
-fn list_all(pool: &DbPool) -> Result<Vec<Task>> {
+fn list_all(pool: &DbPool) -> AppResult<Vec<Task>> {
     let conn = pool.lock();
     let mut stmt = conn.prepare(
         "SELECT id, title, est_pomodoros, done_pomodoros, completed, position,
@@ -52,8 +52,8 @@ fn emit_changed(app: &AppHandle, pool: &DbPool) {
 }
 
 #[tauri::command]
-pub fn tasks_list(pool: State<DbPool>) -> Result<Vec<Task>, String> {
-    list_all(&pool).map_err(|e| e.to_string())
+pub fn tasks_list(pool: State<DbPool>) -> AppResult<Vec<Task>> {
+    list_all(&pool)
 }
 
 #[tauri::command]
@@ -62,42 +62,38 @@ pub fn tasks_create(
     pool: State<DbPool>,
     title: String,
     est_pomodoros: Option<u32>,
-) -> Result<Task, String> {
+) -> AppResult<Task> {
     let title = title.trim().to_string();
     if title.is_empty() {
-        return Err("title is empty".into());
+        return Err(AppError::Validation("task title is empty".into()));
     }
     let est = est_pomodoros.unwrap_or(1).max(1);
     let now = Utc::now().timestamp();
     let id = {
         let conn = pool.lock();
-        let next_pos: i64 = conn
-            .query_row(
-                "SELECT COALESCE(MAX(position), -1) + 1 FROM tasks",
-                [],
-                |r| r.get(0),
-            )
-            .map_err(|e| e.to_string())?;
+        let next_pos: i64 = conn.query_row(
+            "SELECT COALESCE(MAX(position), -1) + 1 FROM tasks",
+            [],
+            |r| r.get(0),
+        )?;
         conn.execute(
             "INSERT INTO tasks (title, est_pomodoros, done_pomodoros, completed,
                                 position, is_current, created_at)
              VALUES (?, ?, 0, 0, ?, 0, ?)",
             params![title, est as i64, next_pos, now],
-        )
-        .map_err(|e| e.to_string())?;
+        )?;
         conn.last_insert_rowid()
     };
-    // If nothing is current yet, make this the current task.
-    let _ = make_current_if_none(&pool, id);
+    make_current_if_none(&pool, id)?;
     emit_changed(&app, &pool);
     let conn = pool.lock();
-    conn.query_row(
+    let task = conn.query_row(
         "SELECT id, title, est_pomodoros, done_pomodoros, completed, position,
                 is_current, created_at FROM tasks WHERE id = ?",
         params![id],
         row_to_task,
-    )
-    .map_err(|e| e.to_string())
+    )?;
+    Ok(task)
 }
 
 #[derive(Deserialize)]
@@ -113,31 +109,31 @@ pub fn tasks_update(
     pool: State<DbPool>,
     id: i64,
     patch: TaskPatch,
-) -> Result<(), String> {
+) -> AppResult<()> {
     {
         let conn = pool.lock();
         if let Some(title) = patch.title {
             let title = title.trim().to_string();
             if title.is_empty() {
-                return Err("title is empty".into());
+                return Err(AppError::Validation("task title is empty".into()));
             }
-            conn.execute("UPDATE tasks SET title = ? WHERE id = ?", params![title, id])
-                .map_err(|e| e.to_string())?;
+            conn.execute(
+                "UPDATE tasks SET title = ? WHERE id = ?",
+                params![title, id],
+            )?;
         }
         if let Some(est) = patch.est_pomodoros {
             let est = est.max(1) as i64;
             conn.execute(
                 "UPDATE tasks SET est_pomodoros = ? WHERE id = ?",
                 params![est, id],
-            )
-            .map_err(|e| e.to_string())?;
+            )?;
         }
         if let Some(completed) = patch.completed {
             conn.execute(
                 "UPDATE tasks SET completed = ? WHERE id = ?",
                 params![completed as i64, id],
-            )
-            .map_err(|e| e.to_string())?;
+            )?;
         }
     }
     emit_changed(&app, &pool);
@@ -145,61 +141,46 @@ pub fn tasks_update(
 }
 
 #[tauri::command]
-pub fn tasks_delete(app: AppHandle, pool: State<DbPool>, id: i64) -> Result<(), String> {
+pub fn tasks_delete(app: AppHandle, pool: State<DbPool>, id: i64) -> AppResult<()> {
     {
         let conn = pool.lock();
-        conn.execute("DELETE FROM tasks WHERE id = ?", params![id])
-            .map_err(|e| e.to_string())?;
+        conn.execute("DELETE FROM tasks WHERE id = ?", params![id])?;
     }
     emit_changed(&app, &pool);
     Ok(())
 }
 
 #[tauri::command]
-pub fn tasks_reorder(
-    app: AppHandle,
-    pool: State<DbPool>,
-    ordered_ids: Vec<i64>,
-) -> Result<(), String> {
+pub fn tasks_reorder(app: AppHandle, pool: State<DbPool>, ordered_ids: Vec<i64>) -> AppResult<()> {
     {
         let mut conn = pool.lock();
-        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        let tx = conn.transaction()?;
         for (i, id) in ordered_ids.iter().enumerate() {
             tx.execute(
                 "UPDATE tasks SET position = ? WHERE id = ?",
                 params![i as i64, id],
-            )
-            .map_err(|e| e.to_string())?;
+            )?;
         }
-        tx.commit().map_err(|e| e.to_string())?;
+        tx.commit()?;
     }
     emit_changed(&app, &pool);
     Ok(())
 }
 
 #[tauri::command]
-pub fn tasks_set_current(
-    app: AppHandle,
-    pool: State<DbPool>,
-    id: Option<i64>,
-) -> Result<(), String> {
+pub fn tasks_set_current(app: AppHandle, pool: State<DbPool>, id: Option<i64>) -> AppResult<()> {
     {
         let conn = pool.lock();
-        conn.execute("UPDATE tasks SET is_current = 0", [])
-            .map_err(|e| e.to_string())?;
+        conn.execute("UPDATE tasks SET is_current = 0", [])?;
         if let Some(id) = id {
-            conn.execute(
-                "UPDATE tasks SET is_current = 1 WHERE id = ?",
-                params![id],
-            )
-            .map_err(|e| e.to_string())?;
+            conn.execute("UPDATE tasks SET is_current = 1 WHERE id = ?", params![id])?;
         }
     }
     emit_changed(&app, &pool);
     Ok(())
 }
 
-fn make_current_if_none(pool: &DbPool, id: i64) -> Result<()> {
+fn make_current_if_none(pool: &DbPool, id: i64) -> AppResult<()> {
     let conn = pool.lock();
     let has_current: i64 = conn.query_row(
         "SELECT COUNT(*) FROM tasks WHERE is_current = 1 AND completed = 0",
@@ -207,10 +188,7 @@ fn make_current_if_none(pool: &DbPool, id: i64) -> Result<()> {
         |r| r.get(0),
     )?;
     if has_current == 0 {
-        conn.execute(
-            "UPDATE tasks SET is_current = 1 WHERE id = ?",
-            params![id],
-        )?;
+        conn.execute("UPDATE tasks SET is_current = 1 WHERE id = ?", params![id])?;
     }
     Ok(())
 }
@@ -230,13 +208,12 @@ pub fn increment_current(app: &AppHandle) -> Option<(i64, u32)> {
                 |r| r.get(0),
             )
             .ok();
-        let Some(id) = current_id else { return None };
+        let id = current_id?;
         conn.execute(
             "UPDATE tasks SET done_pomodoros = done_pomodoros + 1 WHERE id = ?",
             params![id],
         )
         .ok()?;
-        // Auto-complete when reaching estimate.
         conn.execute(
             "UPDATE tasks SET completed = 1
              WHERE id = ? AND done_pomodoros >= est_pomodoros",
@@ -252,7 +229,6 @@ pub fn increment_current(app: &AppHandle) -> Option<(i64, u32)> {
             .ok()?;
         Some((id, done as u32))
     };
-    // If the current task auto-completed, move current to next open task.
     {
         let conn = pool.lock();
         let still_current: i64 = conn
@@ -273,10 +249,7 @@ pub fn increment_current(app: &AppHandle) -> Option<(i64, u32)> {
                 )
                 .ok();
             if let Some(nid) = next_id {
-                let _ = conn.execute(
-                    "UPDATE tasks SET is_current = 1 WHERE id = ?",
-                    params![nid],
-                );
+                let _ = conn.execute("UPDATE tasks SET is_current = 1 WHERE id = ?", params![nid]);
             }
         }
     }

@@ -1,0 +1,213 @@
+/* Settings screen: in-window scrollable preferences. */
+
+.settings-screen {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.settings-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+  height: 44px;
+}
+
+.settings-header h2 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.settings-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-4) var(--space-6);
+}
+
+.settings-body::-webkit-scrollbar {
+  width: 6px;
+}
+.settings-body::-webkit-scrollbar-thumb {
+  background: var(--surface-translucent-active);
+  border-radius: 3px;
+}
+
+.settings-section {
+  background: var(--surface-translucent);
+  border: 1px solid var(--border-translucent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.settings-section .label {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--fg-muted);
+}
+
+.settings-section .row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 6px 4px;
+  font-size: var(--fs-small);
+}
+
+.settings-section .row > span:first-child {
+  color: var(--fg);
+}
+
+.settings-section .row .val {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-label);
+  color: var(--fg-muted);
+  min-width: 56px;
+  text-align: right;
+}
+
+.settings-section .row:has(input[type="range"]) {
+  grid-template-columns: 1fr auto;
+}
+.settings-section .row:has(input[type="range"]) > span:first-child {
+  grid-column: 1;
+}
+.settings-section .row:has(input[type="range"]) .val {
+  grid-column: 2;
+}
+.settings-section .row:has(input[type="range"]) > input[type="range"] {
+  grid-column: 1 / 3;
+  margin-top: 4px;
+}
+
+/* slider */
+input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--surface-translucent-active);
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--fg);
+  cursor: pointer;
+  border: 2px solid var(--accent);
+}
+
+/* toggle */
+.row.toggle {
+  grid-template-columns: 1fr auto;
+}
+
+.row.toggle input[type="checkbox"] {
+  appearance: none;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--surface-translucent-active);
+  position: relative;
+  cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+
+.row.toggle input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--fg);
+  transition: transform var(--t-fast);
+}
+
+.row.toggle input[type="checkbox"]:checked {
+  background: var(--fg);
+}
+
+.row.toggle input[type="checkbox"]:checked::before {
+  transform: translateX(16px);
+  background: var(--accent);
+}
+
+/* select / stepper */
+select,
+.stepper {
+  background: var(--surface-translucent);
+  border: 1px solid var(--border-translucent);
+  color: var(--fg);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-size: var(--fs-small);
+  outline: none;
+}
+
+select:focus,
+.stepper:focus {
+  border-color: var(--fg);
+}
+
+.stepper {
+  width: 72px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* segmented control */
+.seg {
+  display: inline-flex;
+  background: var(--surface-translucent);
+  border: 1px solid var(--border-translucent);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+}
+
+.seg button {
+  padding: 4px 12px;
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  border-radius: var(--radius-pill);
+  transition:
+    background-color var(--t-fast),
+    color var(--t-fast);
+}
+
+.seg button.active {
+  background: var(--fg);
+  color: var(--accent);
+}
+
+/* kbd chip */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  background: var(--surface-translucent-active);
+  border: 1px solid var(--border-translucent);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+}
+
+.settings-version {
+  text-align: center;
+  margin: var(--space-4) 0 0;
+  font-size: 11px;
+  color: var(--fg-faint);
+}

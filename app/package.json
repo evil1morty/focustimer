@@ -1,12 +1,21 @@
 {
-  "name": "app",
+  "name": "focustimer",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "format": "prettier --write src/ ../README.md",
+    "format:check": "prettier --check src/",
+    "rust:check": "cargo check --manifest-path src-tauri/Cargo.toml",
+    "rust:clippy": "cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings",
+    "rust:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --all",
+    "check": "npm run format:check && npm run rust:clippy"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2"
+    "@tauri-apps/cli": "^2",
+    "prettier": "^3.3.3"
   }
 }
