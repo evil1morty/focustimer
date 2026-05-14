@@ -48,7 +48,7 @@ impl SessionTemplate {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimerSnapshot {
     pub phase: Phase,
     pub elapsed_ms: u64,
