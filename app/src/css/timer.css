@@ -57,6 +57,32 @@
   transform: scale(0.97);
 }
 
+/* Thin progress strip under the headline. Only surfaces during a running
+   Pomodoro for the current task — for breaks or when stopped it stays
+   collapsed so it doesn't compete with the big ring below. */
+.current-task-progress {
+  width: 140px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--surface-translucent);
+  margin-top: 6px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--t-base);
+}
+
+.current-task-headline.has-current.is-running.is-pomodoro
+  .current-task-progress {
+  opacity: 1;
+}
+
+.current-task-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--fg);
+  transition: width 240ms linear;
+}
+
 .ring-wrap {
   position: relative;
   width: var(--ring-size);

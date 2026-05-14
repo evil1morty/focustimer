@@ -26,6 +26,7 @@ const els = {
   cycleBar: document.getElementById("cycle-bar"),
   phaseLabel: document.getElementById("phase-label"),
   ringProgress: document.getElementById("ring-progress"),
+  taskProgressFill: document.getElementById("current-task-progress-fill"),
 };
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 46;
@@ -70,6 +71,11 @@ function renderRing(snap) {
   const elapsed = snap.phase === "stopped" ? 0 : snap.elapsed_ms;
   const ratio = total > 0 ? Math.min(1, elapsed / total) : 0;
   els.ringProgress.style.strokeDashoffset = (RING_CIRCUMFERENCE * ratio).toString();
+  // Live fill of the task-headline progress strip. CSS owns the visibility
+  // gate (.has-current + .is-running + .is-pomodoro); we just set the width.
+  if (els.taskProgressFill) {
+    els.taskProgressFill.style.width = `${(ratio * 100).toFixed(1)}%`;
+  }
 }
 
 function render(snap) {

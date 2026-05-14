@@ -17,6 +17,7 @@ const els = {
   form: document.getElementById("add-task-form"),
   input: document.getElementById("add-task-input"),
   currentTaskTitle: document.getElementById("current-task-title"),
+  currentTaskHeadline: document.getElementById("current-task"),
   handle: document.getElementById("task-drawer-handle"),
 };
 
@@ -144,6 +145,7 @@ function render() {
     els.currentTaskTitle.textContent = label;
     els.currentTaskTitle.classList.toggle("is-empty", !current);
     els.currentTaskTitle.classList.toggle("is-clickable", clickable);
+    els.currentTaskHeadline?.classList.toggle("has-current", !!current);
     if (clickable) {
       els.currentTaskTitle.setAttribute("role", "button");
       els.currentTaskTitle.setAttribute("tabindex", "0");
@@ -369,6 +371,13 @@ export function initTasks() {
     if (changed) {
       const current = tasks.find((t) => t.is_current && !t.completed);
       renderHandle(current);
+      // Mirror phase + running state onto the headline so the live
+      // progress strip can key off CSS instead of inline styles.
+      els.currentTaskHeadline?.classList.toggle("is-running", snap.is_running);
+      els.currentTaskHeadline?.classList.toggle(
+        "is-pomodoro",
+        snap.phase === "pomodoro",
+      );
     }
   });
 }
