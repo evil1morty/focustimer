@@ -56,7 +56,13 @@ pub(crate) fn spawn(app: AppHandle, settings: SettingsStore) {
         let mut auto_paused = false;
         loop {
             thread::sleep(Duration::from_millis(POLL_MS));
-            if !settings.lock().pause_on_lock {
+            let pause_on_lock = settings.lock().pause_on_lock;
+            // Skip work only when the setting is off AND we have no
+            // outstanding auto-pause to undo. If we previously paused, we
+            // owe a resume on the next unlock regardless of the current
+            // setting — otherwise toggling pause_on_lock off while paused
+            // strands the timer forever.
+            if !pause_on_lock && !auto_paused {
                 continue;
             }
             let locked = is_locked();
@@ -69,6 +75,9 @@ pub(crate) fn spawn(app: AppHandle, settings: SettingsStore) {
                 None => continue,
             };
             if locked {
+                if !pause_on_lock {
+                    continue;
+                }
                 let snap = engine.snapshot();
                 if snap.is_running {
                     engine.pause();

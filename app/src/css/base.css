@@ -68,6 +68,22 @@ select:focus-visible,
   outline-color: var(--accent);
 }
 
+/*
+ * Honour user preference for reduced motion. Disables phase-background
+ * crossfades, the phase-pill pulse, the ring stroke transition, the
+ * drawer slide, and any chevron rotation. Static UI stays responsive but
+ * vestibular-sensitive users aren't getting animation noise on every tick.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 .grain {
   position: absolute;
   inset: 0;

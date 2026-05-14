@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
@@ -8,7 +8,7 @@ use tauri::{AppHandle, Manager};
 
 pub type DbPool = Arc<Mutex<Connection>>;
 
-fn ensure_dir(path: &PathBuf) -> Result<()> {
+fn ensure_dir(path: &Path) -> Result<()> {
     if !path.exists() {
         std::fs::create_dir_all(path)
             .with_context(|| format!("creating dir {}", path.display()))?;

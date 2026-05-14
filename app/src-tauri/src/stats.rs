@@ -70,23 +70,28 @@ pub(crate) fn record_pomodoro(app: &AppHandle, duration_s: u64) {
 pub fn stats_summary(pool: State<DbPool>) -> AppResult<StatsSummary> {
     let conn = pool.lock();
 
-    // Load every finished_at + duration so we can bucket in Rust by local date
-    // with a 4 AM rollover. The pomodoros table is small enough for this to be
-    // negligible until we accumulate years of data.
+    // Cheap all-time aggregate — no row materialisation, hits the
+    // idx_pomodoros_finished_at index for the COUNT.
+    let (all_time, all_time_focus) = conn.query_row(
+        "SELECT COUNT(*), COALESCE(SUM(duration_s), 0)
+         FROM pomodoros WHERE was_completed = 1",
+        [],
+        |r| Ok((r.get::<_, i64>(0)? as u32, r.get::<_, i64>(1)?)),
+    )?;
+
+    // For the 14-day chart + streak walk we only need ~60 days of rows. This
+    // keeps the per-render cost bounded even after years of use.
+    let cutoff = Utc::now().timestamp() - 60 * 86_400;
     let mut stmt = conn.prepare(
         "SELECT finished_at, duration_s FROM pomodoros
-         WHERE was_completed = 1",
+         WHERE was_completed = 1 AND finished_at >= ?",
     )?;
-    let rows = stmt.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?)))?;
+    let rows = stmt.query_map([cutoff], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?)))?;
 
     let mut by_date: std::collections::BTreeMap<NaiveDate, (u32, i64)> =
         std::collections::BTreeMap::new();
-    let mut all_time: u32 = 0;
-    let mut all_time_focus: i64 = 0;
     for row in rows {
         let (finished_at, duration_s) = row?;
-        all_time += 1;
-        all_time_focus += duration_s;
         let d = bucket_date(finished_at);
         let entry = by_date.entry(d).or_insert((0, 0));
         entry.0 += 1;

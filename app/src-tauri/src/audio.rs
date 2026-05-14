@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::Cursor;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
 use std::thread;
@@ -47,7 +47,7 @@ impl AudioController {
     }
 }
 
-fn load_sounds(dir: &PathBuf) -> HashMap<String, Arc<Vec<u8>>> {
+fn load_sounds(dir: &Path) -> HashMap<String, Arc<Vec<u8>>> {
     let mut m = HashMap::new();
     let Ok(rd) = std::fs::read_dir(dir) else {
         eprintln!("audio: cannot read sounds dir {}", dir.display());

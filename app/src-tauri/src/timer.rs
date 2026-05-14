@@ -181,6 +181,10 @@ impl TimerEngine {
                 let maybe_snapshot = {
                     let mut state = inner.lock();
                     // About-to-end announce: 30s before phase ends, exactly once.
+                    // Side-emits the event but does NOT short-circuit — falls
+                    // through into the same-tick "finished" or "running" check
+                    // below so we never skip a completion that happens to
+                    // coincide with the announce threshold.
                     if state.is_running()
                         && !state.announced_about_to_end
                         && state.total_ms() > 30_000
@@ -188,11 +192,9 @@ impl TimerEngine {
                     {
                         state.announced_about_to_end = true;
                         let phase = state.phase;
-                        drop(state);
                         let _ = app.emit("timer://about-to-end", &phase);
-                        // Re-acquire for the rest of the tick. Skip finished-check this tick.
-                        Some(inner.lock().snapshot())
-                    } else if state.is_running() && state.elapsed_ms() >= state.total_ms() {
+                    }
+                    if state.is_running() && state.elapsed_ms() >= state.total_ms() {
                         let finished = state.phase;
                         if finished == Phase::Pomodoro {
                             state.completed_pomodoros = state.completed_pomodoros.saturating_add(1);
@@ -263,18 +265,32 @@ impl TimerEngine {
     }
 
     pub fn skip(&self, app: &AppHandle) -> TimerSnapshot {
-        self.with(|s| {
+        let (snap, finished, credit_duration_s) = self.with(|s| {
             let finished = s.phase;
-            if finished == Phase::Pomodoro && s.elapsed_ms() >= s.total_ms() / 2 {
+            // If the user skipped after >=50% of a pomodoro, count it as a
+            // completed pomodoro everywhere (cycle counter, task progress,
+            // stats history). Either count it everywhere or nowhere —
+            // otherwise the cycle dots will get out of sync with the stats.
+            let crossed_half =
+                finished == Phase::Pomodoro && s.elapsed_ms() >= s.total_ms() / 2;
+            let duration_s = if crossed_half {
                 s.completed_pomodoros = s.completed_pomodoros.saturating_add(1);
-            }
+                Some(s.template.pomodoro_ms / 1000)
+            } else {
+                None
+            };
             let next = s.next_phase_after(finished);
             let was_running = s.is_running();
             let autostart = was_running && s.auto_start_for(next);
             s.begin_phase(next, autostart);
-            let _ = app.emit("timer://phase-skipped", &finished);
-            s.snapshot()
-        })
+            (s.snapshot(), finished, duration_s)
+        });
+        if let Some(duration_s) = credit_duration_s {
+            crate::tasks::increment_current(app);
+            crate::stats::record_pomodoro(app, duration_s);
+        }
+        let _ = app.emit("timer://phase-skipped", &finished);
+        snap
     }
 
     pub fn reset(&self) -> TimerSnapshot {

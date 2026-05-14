@@ -96,7 +96,7 @@ pub(crate) fn init(app: &AppHandle) -> tauri::Result<()> {
         .ok_or_else(|| tauri::Error::Anyhow(anyhow::anyhow!("default window icon missing")))?;
 
     let app_for_menu = app.clone();
-    let tray = TrayIconBuilder::with_id(TRAY_ID)
+    let _tray = TrayIconBuilder::with_id(TRAY_ID)
         .icon(icon)
         .tooltip("FocusTimer")
         .menu(&menu)
@@ -114,7 +114,6 @@ pub(crate) fn init(app: &AppHandle) -> tauri::Result<()> {
             }
         })
         .build(app)?;
-    drop(tray); // managed by the app via TRAY_ID
 
     // Live tooltip from timer ticks.
     let tooltip_handle = app.clone();
@@ -136,11 +135,17 @@ pub(crate) fn init(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Handle the main window's CloseRequested event. When minimize_to_tray is
-/// on, hide the window instead of quitting.
+/// Handle the main window's CloseRequested event.
+///
+/// - minimize_to_tray on: hide the window and keep the process alive so the
+///   tray icon stays usable. Returns true so the caller prevents close.
+/// - minimize_to_tray off: actively quit. Without `app.exit(0)` here the
+///   tray-icon feature keeps the event loop running headlessly after the
+///   window destroys, leaving an orphaned process the user can't find.
 pub(crate) fn handle_close(app: &AppHandle, settings: &SettingsStore) -> bool {
     let minimize = settings.lock().minimize_to_tray;
     if !minimize {
+        app.exit(0);
         return false;
     }
     if let Some(w) = app.get_webview_window("main") {

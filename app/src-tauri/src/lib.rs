@@ -18,10 +18,8 @@ use std::sync::Arc;
 use parking_lot::Mutex;
 use tauri::{Listener, Manager};
 
-use crate::settings::AppSettings;
-
 use crate::audio::AudioController;
-use crate::settings::SettingsStore;
+use crate::settings::{AppSettings, SettingsStore};
 use crate::timer::{Phase, TimerSnapshot};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

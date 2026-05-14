@@ -3,11 +3,13 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use parking_lot::Mutex;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::settings::{AppSettings, SettingsStore};
 use crate::timer::{Phase, TimerEngine};
+
+pub(crate) const HOTKEYS_FAILED: &str = "hotkeys://failed";
 
 #[derive(Debug, Clone, Copy)]
 enum Action {
@@ -69,22 +71,33 @@ pub(crate) fn apply(app: &AppHandle, settings: &AppSettings) {
     let gs = app.global_shortcut();
     let _ = gs.unregister_all();
     let mut next = HashMap::new();
-    if let Some(sc) = parse(&settings.hotkey_toggle) {
-        if gs.register(sc).is_ok() {
-            next.insert(sc, Action::TogglePause);
-        }
-    }
-    if let Some(sc) = parse(&settings.hotkey_skip) {
-        if gs.register(sc).is_ok() {
-            next.insert(sc, Action::Skip);
-        }
-    }
-    if let Some(sc) = parse(&settings.hotkey_reset) {
-        if gs.register(sc).is_ok() {
-            next.insert(sc, Action::Reset);
+    let mut failures: Vec<String> = Vec::new();
+
+    let want = [
+        ("toggle", &settings.hotkey_toggle, Action::TogglePause),
+        ("skip", &settings.hotkey_skip, Action::Skip),
+        ("reset", &settings.hotkey_reset, Action::Reset),
+    ];
+
+    for (name, keys, action) in want {
+        let Some(sc) = parse(keys) else {
+            failures.push(format!("{name}: unparseable '{keys}'"));
+            continue;
+        };
+        match gs.register(sc) {
+            Ok(()) => {
+                next.insert(sc, action);
+            }
+            Err(e) => {
+                eprintln!("hotkey: failed to register {name}={keys}: {e}");
+                failures.push(format!("{name}: '{keys}' rejected ({e})"));
+            }
         }
     }
     app.state::<Bindings>().replace(next);
+    // Always emit, even on success (empty list). The frontend uses this to
+    // clear any previously-displayed failure banner.
+    let _ = app.emit(HOTKEYS_FAILED, &failures);
 }
 
 pub(crate) fn plugin(bindings: Bindings) -> tauri::plugin::TauriPlugin<tauri::Wry> {

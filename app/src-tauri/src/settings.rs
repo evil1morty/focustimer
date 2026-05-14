@@ -99,7 +99,29 @@ pub struct AppSettings {
 
 impl Default for AppSettings {
     fn default() -> Self {
-        serde_json::from_str("{}").unwrap()
+        // Hand-rolled instead of `serde_json::from_str("{}").unwrap()` so
+        // adding a new field without a #[serde(default)] is a compile error
+        // rather than a runtime panic on first launch.
+        Self {
+            pomodoro_min: default_pomodoro_min(),
+            short_break_min: default_short_break_min(),
+            long_break_min: default_long_break_min(),
+            cycles_per_long_break: default_cycles(),
+            auto_start_breaks: default_true(),
+            auto_start_pomodoros: default_false(),
+            alarm_sound: default_alarm_sound(),
+            alarm_volume: default_volume(),
+            ticking_sound: default_ticking_sound(),
+            ticking_volume: default_volume(),
+            announce_about_to_end: default_true(),
+            theme: default_theme(),
+            autostart: default_false(),
+            minimize_to_tray: default_true(),
+            pause_on_lock: default_true(),
+            hotkey_toggle: default_hotkey_toggle(),
+            hotkey_skip: default_hotkey_skip(),
+            hotkey_reset: default_hotkey_reset(),
+        }
     }
 }
 
