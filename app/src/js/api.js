@@ -137,4 +137,5 @@ export const Events = Object.freeze({
   TIMER_ABOUT_TO_END: "timer://about-to-end",
   TASKS_CHANGED: "tasks://changed",
   SETTINGS_CHANGED: "settings://changed",
+  TRAY_OPEN_SETTINGS: "tray://open-settings",
 });

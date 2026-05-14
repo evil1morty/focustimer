@@ -5,6 +5,7 @@ mod notify;
 mod settings;
 mod tasks;
 mod timer;
+mod tray;
 
 pub use error::{AppError, AppResult};
 
@@ -32,7 +33,9 @@ pub fn run() {
             let audio = audio::init(&handle);
             app.manage(audio.clone());
             wire_audio_events(&handle, audio, settings_store.clone());
-            notify::wire(&handle, settings_store);
+            notify::wire(&handle, settings_store.clone());
+            tray::init(&handle)?;
+            wire_window_close(&handle, settings_store);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -55,6 +58,20 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn wire_window_close(app: &tauri::AppHandle, settings: SettingsStore) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let app_handle = app.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+            if tray::handle_close(&app_handle, &settings) {
+                api.prevent_close();
+            }
+        }
+    });
 }
 
 fn wire_audio_events(app: &tauri::AppHandle, audio: AudioController, settings: SettingsStore) {

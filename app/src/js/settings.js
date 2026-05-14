@@ -160,4 +160,5 @@ export async function initSettings() {
   }
   bindControls();
   listen(Events.SETTINGS_CHANGED, (payload) => payload && render(payload));
+  listen(Events.TRAY_OPEN_SETTINGS, () => setView("settings"));
 }
