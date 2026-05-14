@@ -65,7 +65,7 @@ fn run_action(app: &AppHandle, action: Action) {
     }
 }
 
-pub fn apply(app: &AppHandle, settings: &AppSettings) {
+pub(crate) fn apply(app: &AppHandle, settings: &AppSettings) {
     let gs = app.global_shortcut();
     let _ = gs.unregister_all();
     let mut next = HashMap::new();
@@ -87,7 +87,7 @@ pub fn apply(app: &AppHandle, settings: &AppSettings) {
     app.state::<Bindings>().replace(next);
 }
 
-pub fn plugin(bindings: Bindings) -> tauri::plugin::TauriPlugin<tauri::Wry> {
+pub(crate) fn plugin(bindings: Bindings) -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri_plugin_global_shortcut::Builder::new()
         .with_handler(move |app, shortcut, event| {
             if event.state() != ShortcutState::Pressed {
@@ -100,6 +100,6 @@ pub fn plugin(bindings: Bindings) -> tauri::plugin::TauriPlugin<tauri::Wry> {
         .build()
 }
 
-pub fn init(app: &AppHandle, settings: &SettingsStore) {
+pub(crate) fn init(app: &AppHandle, settings: &SettingsStore) {
     apply(app, &settings.lock());
 }

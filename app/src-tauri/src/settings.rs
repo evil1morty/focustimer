@@ -9,7 +9,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::error::AppResult;
 use crate::timer::{SessionTemplate, TimerEngine};
 
-pub const SETTINGS_CHANGED: &str = "settings://changed";
+pub(crate) const SETTINGS_CHANGED: &str = "settings://changed";
 
 fn default_pomodoro_min() -> u32 {
     25
@@ -149,7 +149,7 @@ fn apply_to_timer(settings: &AppSettings, engine: &TimerEngine) {
     engine.set_auto_starts(settings.auto_start_breaks, settings.auto_start_pomodoros);
 }
 
-pub fn init(app: &AppHandle) -> SettingsStore {
+pub(crate) fn init(app: &AppHandle) -> SettingsStore {
     let settings = load_from_disk(app);
     if let Some(engine) = app.try_state::<TimerEngine>() {
         apply_to_timer(&settings, &engine);

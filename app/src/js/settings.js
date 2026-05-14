@@ -122,7 +122,7 @@ function scheduleSave() {
     } catch (e) {
       console.error("settings_set failed", e);
     }
-  }, 220);
+  }, 100);
 }
 
 function bindControls() {

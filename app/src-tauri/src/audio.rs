@@ -2,10 +2,21 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Sender};
+use std::sync::Arc;
 use std::thread;
 
 use rodio::{Decoder, OutputStream, Sink, Source};
 use tauri::{path::BaseDirectory, AppHandle, Manager};
+
+/// Thin wrapper so we can hand an Arc<Vec<u8>> to rodio's Decoder via Cursor
+/// without ever copying the underlying bytes. AsRef<[u8]> is what Cursor needs.
+struct SharedBytes(Arc<Vec<u8>>);
+
+impl AsRef<[u8]> for SharedBytes {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 enum AudioCmd {
     PlayAlarm { sound: String, volume: f32 },
@@ -36,7 +47,7 @@ impl AudioController {
     }
 }
 
-fn load_sounds(dir: &PathBuf) -> HashMap<String, Vec<u8>> {
+fn load_sounds(dir: &PathBuf) -> HashMap<String, Arc<Vec<u8>>> {
     let mut m = HashMap::new();
     let Ok(rd) = std::fs::read_dir(dir) else {
         eprintln!("audio: cannot read sounds dir {}", dir.display());
@@ -49,7 +60,7 @@ fn load_sounds(dir: &PathBuf) -> HashMap<String, Vec<u8>> {
                 path.file_stem().and_then(|s| s.to_str()).map(String::from),
                 std::fs::read(&path),
             ) {
-                m.insert(stem, bytes);
+                m.insert(stem, Arc::new(bytes));
             }
         }
     }
@@ -93,7 +104,7 @@ fn run_audio_loop(rx: mpsc::Receiver<AudioCmd>, sounds_dir: PathBuf) {
                 let Ok(sink) = Sink::try_new(&stream_handle) else {
                     continue;
                 };
-                let Ok(decoder) = Decoder::new(Cursor::new(bytes.clone())) else {
+                let Ok(decoder) = Decoder::new(Cursor::new(SharedBytes(Arc::clone(bytes)))) else {
                     continue;
                 };
                 sink.set_volume(volume.clamp(0.0, 1.0));
@@ -113,7 +124,7 @@ fn run_audio_loop(rx: mpsc::Receiver<AudioCmd>, sounds_dir: PathBuf) {
                 let Ok(sink) = Sink::try_new(&stream_handle) else {
                     continue;
                 };
-                let Ok(decoder) = Decoder::new(Cursor::new(bytes.clone())) else {
+                let Ok(decoder) = Decoder::new(Cursor::new(SharedBytes(Arc::clone(bytes)))) else {
                     continue;
                 };
                 sink.set_volume(volume.clamp(0.0, 1.0));

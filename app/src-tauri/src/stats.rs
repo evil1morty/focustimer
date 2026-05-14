@@ -6,7 +6,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::db::DbPool;
 use crate::error::AppResult;
 
-pub const STATS_CHANGED: &str = "stats://changed";
+pub(crate) const STATS_CHANGED: &str = "stats://changed";
 const ROLLOVER_HOURS: i64 = 4;
 
 #[derive(Debug, Clone, Serialize)]
@@ -49,7 +49,7 @@ fn current_task_id(pool: &DbPool) -> Option<i64> {
         .ok()
 }
 
-pub fn record_pomodoro(app: &AppHandle, duration_s: u64) {
+pub(crate) fn record_pomodoro(app: &AppHandle, duration_s: u64) {
     let pool = app.state::<DbPool>();
     let finished = Utc::now().timestamp();
     let started = finished - duration_s as i64;

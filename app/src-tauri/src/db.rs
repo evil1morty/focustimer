@@ -16,7 +16,7 @@ fn ensure_dir(path: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-pub fn init(app: &AppHandle) -> Result<DbPool> {
+pub(crate) fn init(app: &AppHandle) -> Result<DbPool> {
     let data_dir = app
         .path()
         .app_data_dir()

@@ -50,7 +50,7 @@ fn is_locked() -> bool {
     }
 }
 
-pub fn spawn(app: AppHandle, settings: SettingsStore) {
+pub(crate) fn spawn(app: AppHandle, settings: SettingsStore) {
     thread::spawn(move || {
         let mut prev_locked = false;
         let mut auto_paused = false;

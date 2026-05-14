@@ -1,11 +1,11 @@
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Listener, Manager, Wry};
+use tauri::{AppHandle, Emitter, Listener, Manager, Wry};
 
 use crate::settings::SettingsStore;
 use crate::timer::{Phase, TimerEngine, TimerSnapshot};
 
-pub const TRAY_ID: &str = "main-tray";
+pub(crate) const TRAY_ID: &str = "main-tray";
 
 fn fmt_ms(ms: u64) -> String {
     let total = (ms / 1000) as u32;
@@ -79,7 +79,7 @@ fn handle_menu(app: &AppHandle, id: &str) {
         }
         "settings" => {
             show_main(app);
-            let _ = app.emit_to_main("tray://open-settings");
+            let _ = app.emit("tray://open-settings", ());
         }
         "quit" => {
             app.exit(0);
@@ -88,18 +88,7 @@ fn handle_menu(app: &AppHandle, id: &str) {
     }
 }
 
-trait EmitToMain {
-    fn emit_to_main(&self, event: &str) -> tauri::Result<()>;
-}
-
-impl EmitToMain for AppHandle {
-    fn emit_to_main(&self, event: &str) -> tauri::Result<()> {
-        use tauri::Emitter;
-        self.emit(event, ())
-    }
-}
-
-pub fn init(app: &AppHandle) -> tauri::Result<()> {
+pub(crate) fn init(app: &AppHandle) -> tauri::Result<()> {
     let menu = build_menu(app)?;
     let icon = app
         .default_window_icon()
@@ -149,7 +138,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
 
 /// Handle the main window's CloseRequested event. When minimize_to_tray is
 /// on, hide the window instead of quitting.
-pub fn handle_close(app: &AppHandle, settings: &SettingsStore) -> bool {
+pub(crate) fn handle_close(app: &AppHandle, settings: &SettingsStore) -> bool {
     let minimize = settings.lock().minimize_to_tray;
     if !minimize {
         return false;

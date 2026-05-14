@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::time;
 
-pub const TICK_EVENT: &str = "timer://tick";
+pub(crate) const TICK_EVENT: &str = "timer://tick";
 const TICK_INTERVAL_MS: u64 = 250;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

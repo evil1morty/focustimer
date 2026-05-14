@@ -6,7 +6,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::db::DbPool;
 use crate::error::{AppError, AppResult};
 
-pub const TASKS_CHANGED: &str = "tasks://changed";
+pub(crate) const TASKS_CHANGED: &str = "tasks://changed";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Task {
@@ -195,7 +195,7 @@ fn make_current_if_none(pool: &DbPool, id: i64) -> AppResult<()> {
 
 /// Increment the active task's done counter. Called by the timer when a
 /// pomodoro completes naturally. Returns the (id, done) of the affected task.
-pub fn increment_current(app: &AppHandle) -> Option<(i64, u32)> {
+pub(crate) fn increment_current(app: &AppHandle) -> Option<(i64, u32)> {
     let pool = app.state::<DbPool>();
     let result = {
         let conn = pool.lock();

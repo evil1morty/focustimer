@@ -27,7 +27,7 @@ fn about_to_end_message(phase: Phase) -> (&'static str, &'static str) {
     }
 }
 
-pub fn wire(app: &AppHandle, settings: SettingsStore) {
+pub(crate) fn wire(app: &AppHandle, settings: SettingsStore) {
     let app_for_finish = app.clone();
     app.listen("timer://phase-finished", move |event| {
         let Ok(finished): Result<Phase, _> = serde_json::from_str(event.payload()) else {
