@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bgShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000" stop-opacity="0" />
+      <stop offset="1" stop-color="#000" stop-opacity="0.55" />
+    </linearGradient>
+  </defs>
+
+  <!-- rounded square — the clay/terracotta brand surface -->
+  <rect width="1024" height="1024" rx="200" fill="#7C4A3A" />
+  <rect width="1024" height="1024" rx="200" fill="url(#bgShade)" opacity="0.18" />
+
+  <!-- subtle inner border for definition -->
+  <rect x="40" y="40" width="944" height="944" rx="180" fill="none"
+        stroke="#F5F1EA" stroke-opacity="0.08" stroke-width="3" />
+
+  <!-- ring track -->
+  <circle cx="512" cy="512" r="300" fill="none"
+          stroke="#F5F1EA" stroke-opacity="0.16" stroke-width="46" />
+
+  <!-- ring progress (about 2/3 around) — depicts focus in progress -->
+  <circle cx="512" cy="512" r="300" fill="none"
+          stroke="#F5F1EA" stroke-width="46" stroke-linecap="round"
+          stroke-dasharray="1884.96 1884.96"
+          stroke-dashoffset="628.32"
+          transform="rotate(-90 512 512)" />
+
+  <!-- "now" marker dot at top of the ring -->
+  <circle cx="512" cy="212" r="34" fill="#F5F1EA" />
+</svg>
