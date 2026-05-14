@@ -195,6 +195,29 @@ body[data-tasks="open"] .task-drawer-handle .chevron {
   opacity: 0.4;
 }
 
+/* Quick selection feedback. Plays once after the user picks a row so they
+   don't have to hunt for the (subtle) is-current accent to know the click
+   registered. */
+@keyframes task-selected-pulse {
+  0% {
+    background: var(--accent);
+    color: var(--fg);
+  }
+  100% {
+    background: rgba(0, 0, 0, 0.055);
+    color: var(--panel-fg);
+  }
+}
+
+.task-row.just-selected {
+  animation: task-selected-pulse 600ms ease-out;
+}
+
+.task-row.just-selected .task-title,
+.task-row.just-selected .task-count {
+  color: inherit;
+}
+
 .drop-indicator {
   list-style: none;
   height: 2px;

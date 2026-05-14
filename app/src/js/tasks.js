@@ -96,10 +96,14 @@ function render() {
     let clickable = false;
     if (current) {
       label = current.title;
-    } else if (tasks.length > 0) {
+    } else if (open > 0) {
+      // There ARE open tasks but none is current — guide the user to pick one.
       label = "Pick a task below to track focus";
       clickable = true;
     } else {
+      // Either no tasks at all, or every task is already done. Either way the
+      // only useful action is to add a new task; don't promise something the
+      // user can't deliver on.
       label = "Add a task below ↓";
       clickable = true;
     }
@@ -114,6 +118,21 @@ function render() {
       els.currentTaskTitle.removeAttribute("tabindex");
     }
   }
+}
+
+/**
+ * Flash a row after the user picks it so the change of state registers.
+ * The class is removed after the animation; the row keeps its is-current
+ * styling from the next render() (which lands via the tasks://changed event).
+ */
+function flashSelection(id) {
+  // Wait for the post-tasks://changed render to run, then highlight the row.
+  requestAnimationFrame(() => {
+    const row = els.list.querySelector(`.task-row[data-id="${id}"]`);
+    if (!row) return;
+    row.classList.add("just-selected");
+    setTimeout(() => row.classList.remove("just-selected"), 600);
+  });
 }
 
 async function refresh() {
@@ -196,6 +215,7 @@ async function handleClick(e) {
     startEditEst(li.querySelector(".task-count"), task);
   } else if (!task.completed) {
     await tasksSetCurrent(id);
+    flashSelection(id);
   }
 }
 
