@@ -177,6 +177,10 @@ impl TimerEngine {
                         let autostart = state.auto_start_next;
                         state.begin_phase(next, autostart);
                         let snap = state.snapshot();
+                        drop(state);
+                        if finished == Phase::Pomodoro {
+                            crate::tasks::increment_current(&app);
+                        }
                         let _ = app.emit("timer://phase-finished", &finished);
                         Some(snap)
                     } else if state.is_running() || state.is_paused() {

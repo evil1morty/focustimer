@@ -1,5 +1,6 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
+import { initTasks } from "./js/tasks.js";
 
 const PHASE_LABEL = {
   stopped: "Ready",
@@ -137,19 +138,11 @@ function bind() {
     console.log("stats — TODO task #11");
   });
 
-  const form = document.getElementById("add-task-form");
-  form?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const input = document.getElementById("add-task-input");
-    if (input.value.trim()) {
-      console.log("add task — TODO task #5:", input.value);
-      input.value = "";
-    }
-  });
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   bind();
+  initTasks();
   await refresh();
   await listen("timer://tick", (e) => render(e.payload));
 });
