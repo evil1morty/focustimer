@@ -170,6 +170,16 @@ body[data-tasks="open"] .task-drawer-handle .chevron {
   opacity: 0.4;
 }
 
+.drop-indicator {
+  list-style: none;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  margin: 2px 6px;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+}
+
 .task-check {
   width: 22px;
   height: 22px;

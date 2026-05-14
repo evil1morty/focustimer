@@ -38,6 +38,21 @@ function toggleDrawer() {
 /** @type {import("./api.js").Task[]} */
 let tasks = [];
 let dragId = null;
+/** @type {HTMLElement|null} */
+let dropIndicator = null;
+
+function ensureIndicator() {
+  if (!dropIndicator) {
+    dropIndicator = document.createElement("li");
+    dropIndicator.className = "drop-indicator";
+    dropIndicator.setAttribute("aria-hidden", "true");
+  }
+  return dropIndicator;
+}
+
+function clearIndicator() {
+  dropIndicator?.remove();
+}
 
 function escapeHtml(s) {
   return s
@@ -224,11 +239,24 @@ function handleDragOver(e) {
   if (!draggingEl || draggingEl === li) return;
   const rect = li.getBoundingClientRect();
   const before = e.clientY < rect.top + rect.height / 2;
-  els.list.insertBefore(draggingEl, before ? li : li.nextSibling);
+  const ind = ensureIndicator();
+  // Don't place an indicator immediately adjacent to the dragging row;
+  // that just means "no-op move".
+  const target = before ? li : li.nextSibling;
+  if (target === draggingEl || target === draggingEl.nextSibling) {
+    clearIndicator();
+    return;
+  }
+  els.list.insertBefore(ind, target);
 }
 
 async function handleDragEnd() {
-  els.list.querySelector(".dragging")?.classList.remove("dragging");
+  const draggingEl = els.list.querySelector(".dragging");
+  if (dropIndicator?.parentElement && draggingEl) {
+    els.list.insertBefore(draggingEl, dropIndicator);
+  }
+  clearIndicator();
+  draggingEl?.classList.remove("dragging");
   if (dragId == null) return;
   dragId = null;
   const orderedIds = Array.from(els.list.querySelectorAll(".task-row")).map((el) =>
