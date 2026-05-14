@@ -16,8 +16,8 @@
 
   /* fg on the colored surface */
   --fg: #f5f1ea; /* warm off-white (not pure #FFF) */
-  --fg-muted: rgba(245, 241, 234, 0.62);
-  --fg-faint: rgba(245, 241, 234, 0.35);
+  --fg-muted: rgba(245, 241, 234, 0.78);
+  --fg-faint: rgba(245, 241, 234, 0.48);
   --fg-strong: #ffffff;
   --surface-translucent: rgba(245, 241, 234, 0.08);
   --surface-translucent-hover: rgba(245, 241, 234, 0.14);

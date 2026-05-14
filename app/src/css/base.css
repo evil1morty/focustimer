@@ -43,6 +43,31 @@ input {
   color: inherit;
 }
 
+/*
+ * Keyboard focus indicator. :focus-visible only fires for keyboard
+ * navigation, so mouse users don't see rings, but tab users always do.
+ */
+:focus {
+  outline: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--fg-strong);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* On the kraft/paper panel the white ring would disappear — use accent. */
+.task-panel button:focus-visible,
+.task-panel input:focus-visible,
+.task-panel [tabindex]:focus-visible {
+  outline-color: var(--accent);
+}
+
 .grain {
   position: absolute;
   inset: 0;
