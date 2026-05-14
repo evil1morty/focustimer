@@ -63,8 +63,9 @@
   --space-8: 32px;
 
   /* timer ring — drawn in SVG, parametrised here */
-  --ring-size: 248px;
-  --ring-stroke: 4px;
+  --ring-size: 272px;
+  --ring-stroke: 5px;
+  --drawer-handle-h: 48px;
   --ring-track: rgba(245, 241, 234, 0.14);
   --ring-progress: rgba(245, 241, 234, 0.92);
 

@@ -15,7 +15,25 @@ const els = {
   form: document.getElementById("add-task-form"),
   input: document.getElementById("add-task-input"),
   currentTaskTitle: document.getElementById("current-task-title"),
+  handle: document.getElementById("task-drawer-handle"),
 };
+
+function openDrawer() {
+  document.body.dataset.tasks = "open";
+  els.handle?.setAttribute("aria-expanded", "true");
+  els.handle?.setAttribute("aria-label", "Hide tasks");
+}
+
+function closeDrawer() {
+  document.body.dataset.tasks = "closed";
+  els.handle?.setAttribute("aria-expanded", "false");
+  els.handle?.setAttribute("aria-label", "Show tasks");
+}
+
+function toggleDrawer() {
+  if (document.body.dataset.tasks === "open") closeDrawer();
+  else openDrawer();
+}
 
 /** @type {import("./api.js").Task[]} */
 let tasks = [];
@@ -37,11 +55,12 @@ function renderTaskRow(task) {
   if (task.is_current) li.classList.add("is-current");
   if (task.completed) li.classList.add("is-done");
   li.draggable = true;
+  const safeTitle = escapeHtml(task.title);
   li.innerHTML = `
     <button class="task-check" data-act="toggle" aria-label="Toggle complete">
       <span class="check-box"></span>
     </button>
-    <span class="task-title" title="Double-click to rename">${escapeHtml(task.title)}</span>
+    <span class="task-title" title="${safeTitle}">${safeTitle}</span>
     <button class="task-count" data-act="edit-est" title="Click to change estimate"
             aria-label="${task.done_pomodoros} of ${task.est_pomodoros} pomodoros — click to edit">
       ${task.done_pomodoros}/${task.est_pomodoros}
@@ -59,15 +78,26 @@ function render() {
   const current = tasks.find((t) => t.is_current && !t.completed);
   if (els.currentTaskTitle) {
     let label;
+    let clickable = false;
     if (current) {
       label = current.title;
     } else if (tasks.length > 0) {
       label = "Pick a task below to track focus";
+      clickable = true;
     } else {
       label = "Add a task below ↓";
+      clickable = true;
     }
     els.currentTaskTitle.textContent = label;
     els.currentTaskTitle.classList.toggle("is-empty", !current);
+    els.currentTaskTitle.classList.toggle("is-clickable", clickable);
+    if (clickable) {
+      els.currentTaskTitle.setAttribute("role", "button");
+      els.currentTaskTitle.setAttribute("tabindex", "0");
+    } else {
+      els.currentTaskTitle.removeAttribute("role");
+      els.currentTaskTitle.removeAttribute("tabindex");
+    }
   }
 }
 
@@ -178,6 +208,9 @@ async function handleSubmit(e) {
 function handleDragStart(e) {
   const li = e.target.closest(".task-row");
   if (!li) return;
+  // Commit any open inline edit before reordering — otherwise the input
+  // gets wiped by the re-render and the user loses their text.
+  els.list.querySelectorAll("input").forEach((input) => input.blur());
   dragId = Number(li.dataset.id);
   li.classList.add("dragging");
   e.dataTransfer.effectAllowed = "move";
@@ -204,6 +237,14 @@ async function handleDragEnd() {
   await tasksReorder(orderedIds);
 }
 
+function handleHeadlineClick() {
+  if (!els.currentTaskTitle?.classList.contains("is-clickable")) return;
+  openDrawer();
+  // Focus the input only when the drawer is fully open so the slide
+  // animation isn't interrupted by a competing focus jump.
+  setTimeout(() => els.input?.focus(), 280);
+}
+
 export function initTasks() {
   els.list.addEventListener("click", handleClick);
   els.list.addEventListener("dblclick", handleDblClick);
@@ -211,6 +252,16 @@ export function initTasks() {
   els.list.addEventListener("dragover", handleDragOver);
   els.list.addEventListener("dragend", handleDragEnd);
   els.form.addEventListener("submit", handleSubmit);
+  els.handle?.addEventListener("click", toggleDrawer);
+  els.currentTaskTitle?.addEventListener("click", handleHeadlineClick);
+  els.currentTaskTitle?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleHeadlineClick();
+    }
+  });
+  // Start with drawer closed.
+  closeDrawer();
   refresh();
   listen(Events.TASKS_CHANGED, (payload) => {
     tasks = payload;

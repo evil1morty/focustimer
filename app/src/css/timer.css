@@ -5,7 +5,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--space-3) var(--space-4) var(--space-5);
+  /* Bottom padding leaves room for the always-visible drawer handle. */
+  padding: var(--space-3) var(--space-4) calc(var(--drawer-handle-h) + var(--space-3));
   min-height: 0;
 }
 
@@ -33,6 +34,21 @@
   font-weight: 400;
   color: var(--fg-muted);
   font-style: italic;
+}
+
+.current-task-title.is-clickable {
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--border-translucent);
+  transition:
+    background-color var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.current-task-title.is-clickable:hover {
+  background: var(--surface-translucent-hover);
+  border-color: var(--fg-muted);
 }
 
 .ring-wrap {
@@ -64,7 +80,7 @@
 
 .ring-progress {
   stroke: var(--ring-progress);
-  stroke-dasharray: 289.027; /* 2 * pi * 46 */
+  stroke-dasharray: 282.74; /* 2 * pi * 45 */
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 240ms linear;
 }

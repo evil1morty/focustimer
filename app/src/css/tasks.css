@@ -1,34 +1,93 @@
-/* Task panel + task rows: anchored to the bottom, kraft/paper toned. */
+/*
+ * Task drawer. The panel is anchored to the bottom of the viewport and
+ * slides up when body[data-tasks="open"]; otherwise only the handle (the
+ * "Tasks · N open" button) shows so the timer view is unobstructed.
+ */
 
 .task-panel {
-  flex: 0 0 auto;
-  max-height: 45%;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  max-height: 78vh;
   background: var(--panel-bg);
   color: var(--panel-fg);
   border-top-left-radius: var(--radius-xl);
   border-top-right-radius: var(--radius-xl);
-  padding: var(--space-4) var(--space-4) var(--space-3);
-  display: flex;
-  flex-direction: column;
-  min-height: 110px;
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.22);
+  transform: translateY(calc(100% - var(--drawer-handle-h)));
+  transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.task-panel-header {
+body[data-tasks="open"] .task-panel {
+  transform: translateY(0);
+}
+
+/* Settings/stats screens swap into the timer-screen slot — hide the drawer
+ * entirely so the back arrow and content have full room. */
+body[data-view="settings"] .task-panel,
+body[data-view="stats"] .task-panel {
+  display: none;
+}
+
+/* ---------- drawer handle ---------- */
+.task-drawer-handle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-2);
+  gap: var(--space-3);
+  height: var(--drawer-handle-h);
+  padding: 0 var(--space-4);
+  width: 100%;
+  background: transparent;
+  color: var(--panel-fg);
+  border: 0;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  flex: 0 0 auto;
+  transition: border-color var(--t-fast);
 }
 
-.task-panel .label {
+body[data-tasks="open"] .task-drawer-handle {
+  border-bottom-color: var(--panel-border);
+}
+
+.task-drawer-handle .chevron {
   color: var(--panel-fg-muted);
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.task-panel-count {
+body[data-tasks="open"] .task-drawer-handle .chevron {
+  transform: rotate(180deg);
+}
+
+.task-drawer-handle .label {
+  color: var(--panel-fg);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--fs-small);
+}
+
+.task-drawer-handle .task-panel-count {
+  margin-left: auto;
+  color: var(--panel-fg-muted);
   font-size: var(--fs-label);
-  color: var(--panel-fg-muted);
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- drawer content ---------- */
+.task-drawer-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--space-3) var(--space-4) var(--space-3);
 }
 
 .add-task input {
@@ -76,7 +135,7 @@
   border-radius: 3px;
 }
 
-/* row */
+/* ---------- task row ---------- */
 .task-row {
   display: flex;
   align-items: center;
@@ -96,6 +155,10 @@
   background: rgba(0, 0, 0, 0.06);
   border-left: 3px solid var(--accent);
   padding-left: 7px;
+}
+
+.task-row.is-done {
+  cursor: default;
 }
 
 .task-row.is-done .task-title {
