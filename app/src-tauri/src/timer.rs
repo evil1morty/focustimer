@@ -353,3 +353,144 @@ pub fn register(app: &AppHandle) -> TimerEngine {
     engine.spawn_tick_loop(app.clone());
     engine
 }
+
+// ---------- tests ----------
+// These exercise the pure state machine without the tokio tick loop or a
+// Tauri AppHandle. The tick loop is only responsible for emitting events
+// and calling begin_phase on completion; both are covered indirectly by
+// asserting begin_phase + next_phase_after behaviour here.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::thread::sleep;
+
+    fn template(cycles: u32) -> SessionTemplate {
+        SessionTemplate {
+            pomodoro_ms: 25 * 60 * 1000,
+            short_break_ms: 5 * 60 * 1000,
+            long_break_ms: 15 * 60 * 1000,
+            cycles_per_long_break: cycles,
+        }
+    }
+
+    fn inner(cycles: u32) -> Inner {
+        let mut i = Inner::new();
+        i.template = template(cycles);
+        i
+    }
+
+    #[test]
+    fn pomodoro_advances_to_short_break_when_not_at_cycle_boundary() {
+        let mut i = inner(4);
+        // After zero completed pomodoros, the next finish goes 1 -> 1%4 != 0.
+        assert_eq!(i.next_phase_after(Phase::Pomodoro), Phase::ShortBreak);
+        i.completed_pomodoros = 1; // next will be 2 -> short
+        assert_eq!(i.next_phase_after(Phase::Pomodoro), Phase::ShortBreak);
+        i.completed_pomodoros = 2;
+        assert_eq!(i.next_phase_after(Phase::Pomodoro), Phase::ShortBreak);
+    }
+
+    #[test]
+    fn pomodoro_advances_to_long_break_every_nth_cycle() {
+        let mut i = inner(4);
+        i.completed_pomodoros = 3; // next will be 4 -> 4%4 == 0
+        assert_eq!(i.next_phase_after(Phase::Pomodoro), Phase::LongBreak);
+        i.completed_pomodoros = 7; // next 8 -> 8%4 == 0
+        assert_eq!(i.next_phase_after(Phase::Pomodoro), Phase::LongBreak);
+    }
+
+    #[test]
+    fn breaks_always_return_to_pomodoro() {
+        let i = inner(4);
+        assert_eq!(i.next_phase_after(Phase::ShortBreak), Phase::Pomodoro);
+        assert_eq!(i.next_phase_after(Phase::LongBreak), Phase::Pomodoro);
+    }
+
+    #[test]
+    fn auto_start_routes_by_destination_phase() {
+        let mut i = Inner::new();
+        i.auto_start_breaks = true;
+        i.auto_start_pomodoros = false;
+        assert!(i.auto_start_for(Phase::ShortBreak));
+        assert!(i.auto_start_for(Phase::LongBreak));
+        assert!(!i.auto_start_for(Phase::Pomodoro));
+        assert!(!i.auto_start_for(Phase::Stopped));
+    }
+
+    #[test]
+    fn begin_phase_with_autostart_starts_running() {
+        let mut i = Inner::new();
+        i.begin_phase(Phase::Pomodoro, true);
+        assert_eq!(i.phase, Phase::Pomodoro);
+        assert!(i.is_running());
+        assert!(!i.is_paused());
+    }
+
+    #[test]
+    fn begin_phase_without_autostart_leaves_stopped() {
+        let mut i = Inner::new();
+        i.begin_phase(Phase::Pomodoro, false);
+        assert_eq!(i.phase, Phase::Pomodoro);
+        assert!(i.started_at.is_none());
+        assert!(!i.is_running());
+    }
+
+    #[test]
+    fn reset_clears_completed_and_returns_to_stopped() {
+        let engine = TimerEngine::new();
+        engine.with(|s| {
+            s.completed_pomodoros = 3;
+            s.begin_phase(Phase::Pomodoro, true);
+        });
+        engine.reset();
+        let snap = engine.snapshot();
+        assert_eq!(snap.phase, Phase::Stopped);
+        assert_eq!(snap.completed_pomodoros, 0);
+        assert!(!snap.is_running);
+        assert!(!snap.is_paused);
+    }
+
+    #[test]
+    fn pause_resume_preserves_elapsed() {
+        let engine = TimerEngine::new();
+        engine.start(Some(Phase::Pomodoro));
+        sleep(Duration::from_millis(100));
+        let before_pause = engine.snapshot().elapsed_ms;
+        engine.pause();
+        sleep(Duration::from_millis(150));
+        // While paused elapsed should be frozen close to before_pause.
+        let mid_pause = engine.snapshot().elapsed_ms;
+        assert!(
+            mid_pause.abs_diff(before_pause) < 30,
+            "expected frozen elapsed, got {mid_pause} vs {before_pause}",
+        );
+        engine.resume();
+        sleep(Duration::from_millis(100));
+        let after = engine.snapshot().elapsed_ms;
+        // Roughly 200 ms total elapsed (the 150ms pause should not count).
+        // Allow a 50 ms tolerance for scheduling jitter.
+        assert!(
+            (150..=260).contains(&after),
+            "expected ~200ms elapsed, got {after}",
+        );
+    }
+
+    #[test]
+    fn snapshot_remaining_clamps_to_zero() {
+        let engine = TimerEngine::new();
+        engine.with(|s| {
+            s.template = SessionTemplate {
+                pomodoro_ms: 10,
+                short_break_ms: 5,
+                long_break_ms: 5,
+                cycles_per_long_break: 4,
+            };
+            s.begin_phase(Phase::Pomodoro, true);
+        });
+        sleep(Duration::from_millis(40));
+        let snap = engine.snapshot();
+        assert_eq!(snap.remaining_ms, 0);
+        assert!(snap.elapsed_ms >= snap.total_ms);
+    }
+}
