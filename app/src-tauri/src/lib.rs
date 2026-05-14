@@ -1,6 +1,7 @@
 mod audio;
 mod db;
 mod error;
+mod hotkeys;
 mod notify;
 mod settings;
 mod tasks;
@@ -14,15 +15,20 @@ use std::sync::Arc;
 use parking_lot::Mutex;
 use tauri::{Listener, Manager};
 
+use crate::settings::AppSettings;
+
 use crate::audio::AudioController;
 use crate::settings::SettingsStore;
 use crate::timer::{Phase, TimerSnapshot};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let hotkey_bindings = hotkeys::Bindings::default();
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(hotkeys::plugin(hotkey_bindings.clone()))
+        .manage(hotkey_bindings)
         .setup(|app| {
             let handle = app.handle().clone();
             let pool = db::init(&handle).expect("init sqlite");
@@ -35,7 +41,9 @@ pub fn run() {
             wire_audio_events(&handle, audio, settings_store.clone());
             notify::wire(&handle, settings_store.clone());
             tray::init(&handle)?;
-            wire_window_close(&handle, settings_store);
+            hotkeys::init(&handle, &settings_store);
+            wire_window_close(&handle, settings_store.clone());
+            wire_settings_change(&handle, settings_store);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -58,6 +66,15 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn wire_settings_change(app: &tauri::AppHandle, _settings: SettingsStore) {
+    let app_handle = app.clone();
+    app.listen("settings://changed", move |event| {
+        if let Ok(new_settings) = serde_json::from_str::<AppSettings>(event.payload()) {
+            hotkeys::apply(&app_handle, &new_settings);
+        }
+    });
 }
 
 fn wire_window_close(app: &tauri::AppHandle, settings: SettingsStore) {
