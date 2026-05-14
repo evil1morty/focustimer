@@ -68,7 +68,8 @@ struct Inner {
     started_at: Option<Instant>,
     paused_at: Option<Instant>,
     completed_pomodoros: u32,
-    auto_start_next: bool,
+    auto_start_breaks: bool,
+    auto_start_pomodoros: bool,
 }
 
 impl Inner {
@@ -79,7 +80,16 @@ impl Inner {
             started_at: None,
             paused_at: None,
             completed_pomodoros: 0,
-            auto_start_next: true,
+            auto_start_breaks: true,
+            auto_start_pomodoros: false,
+        }
+    }
+
+    fn auto_start_for(&self, next: Phase) -> bool {
+        match next {
+            Phase::Pomodoro => self.auto_start_pomodoros,
+            Phase::ShortBreak | Phase::LongBreak => self.auto_start_breaks,
+            Phase::Stopped => false,
         }
     }
 
@@ -174,7 +184,7 @@ impl TimerEngine {
                                 state.completed_pomodoros.saturating_add(1);
                         }
                         let next = state.next_phase_after(finished);
-                        let autostart = state.auto_start_next;
+                        let autostart = state.auto_start_for(next);
                         state.begin_phase(next, autostart);
                         let snap = state.snapshot();
                         drop(state);
@@ -243,7 +253,8 @@ impl TimerEngine {
                 s.completed_pomodoros = s.completed_pomodoros.saturating_add(1);
             }
             let next = s.next_phase_after(finished);
-            let autostart = s.auto_start_next && s.is_running();
+            let was_running = s.is_running();
+            let autostart = was_running && s.auto_start_for(next);
             s.begin_phase(next, autostart);
             let _ = app.emit("timer://phase-skipped", &finished);
             s.snapshot()
@@ -267,8 +278,11 @@ impl TimerEngine {
         })
     }
 
-    pub fn set_auto_start_next(&self, enabled: bool) {
-        self.with(|s| s.auto_start_next = enabled);
+    pub fn set_auto_starts(&self, breaks: bool, pomodoros: bool) {
+        self.with(|s| {
+            s.auto_start_breaks = breaks;
+            s.auto_start_pomodoros = pomodoros;
+        });
     }
 }
 
@@ -311,8 +325,12 @@ pub fn timer_set_template(
 }
 
 #[tauri::command]
-pub fn timer_set_auto_start_next(engine: State<TimerEngine>, enabled: bool) -> TimerSnapshot {
-    engine.set_auto_start_next(enabled);
+pub fn timer_set_auto_starts(
+    engine: State<TimerEngine>,
+    breaks: bool,
+    pomodoros: bool,
+) -> TimerSnapshot {
+    engine.set_auto_starts(breaks, pomodoros);
     engine.snapshot()
 }
 

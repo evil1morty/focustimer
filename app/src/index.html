@@ -13,7 +13,7 @@
     <title>FocusTimer</title>
     <script type="module" src="/main.js" defer></script>
   </head>
-  <body data-phase="stopped">
+  <body data-phase="stopped" data-view="timer">
     <div class="grain" aria-hidden="true"></div>
 
     <header class="app-header">
@@ -56,6 +56,136 @@
         </button>
       </div>
     </main>
+
+    <section class="settings-screen" id="settings-screen" hidden>
+      <header class="settings-header">
+        <button class="icon-btn" id="btn-settings-back" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <h2>Settings</h2>
+        <div style="width:32px"></div>
+      </header>
+      <div class="settings-body">
+        <section class="settings-section">
+          <h3 class="label">Timer</h3>
+          <label class="row">
+            <span>Pomodoro</span>
+            <input type="range" min="1" max="60" step="1" id="set-pomodoro" />
+            <span class="val" id="set-pomodoro-val">25 min</span>
+          </label>
+          <label class="row">
+            <span>Short break</span>
+            <input type="range" min="1" max="30" step="1" id="set-short-break" />
+            <span class="val" id="set-short-break-val">5 min</span>
+          </label>
+          <label class="row">
+            <span>Long break</span>
+            <input type="range" min="1" max="60" step="1" id="set-long-break" />
+            <span class="val" id="set-long-break-val">15 min</span>
+          </label>
+          <label class="row">
+            <span>Long break after</span>
+            <input type="number" min="2" max="8" step="1" id="set-cycles" class="stepper" />
+            <span class="val muted">pomodoros</span>
+          </label>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="label">Behavior</h3>
+          <label class="row toggle">
+            <span>Auto-start breaks</span>
+            <input type="checkbox" id="set-auto-breaks" />
+          </label>
+          <label class="row toggle">
+            <span>Auto-start pomodoros</span>
+            <input type="checkbox" id="set-auto-pomos" />
+          </label>
+          <label class="row toggle">
+            <span>Announce 30s before end</span>
+            <input type="checkbox" id="set-announce" />
+          </label>
+          <label class="row toggle">
+            <span>Pause when screen is locked</span>
+            <input type="checkbox" id="set-pause-on-lock" />
+          </label>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="label">Sounds</h3>
+          <label class="row">
+            <span>Alarm</span>
+            <select id="set-alarm-sound">
+              <option value="off">Off</option>
+              <option value="bell">Bell</option>
+              <option value="loud-bell">Loud bell</option>
+            </select>
+            <span class="val muted"></span>
+          </label>
+          <label class="row">
+            <span>Alarm volume</span>
+            <input type="range" min="0" max="100" step="5" id="set-alarm-volume" />
+            <span class="val" id="set-alarm-volume-val">80%</span>
+          </label>
+          <label class="row">
+            <span>Ticking</span>
+            <select id="set-ticking-sound">
+              <option value="off">Off</option>
+              <option value="clock">Clock</option>
+              <option value="metronome">Metronome</option>
+              <option value="brown-noise">Brown noise</option>
+            </select>
+            <span class="val muted"></span>
+          </label>
+          <label class="row">
+            <span>Ticking volume</span>
+            <input type="range" min="0" max="100" step="5" id="set-ticking-volume" />
+            <span class="val" id="set-ticking-volume-val">80%</span>
+          </label>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="label">Appearance</h3>
+          <div class="row">
+            <span>Theme</span>
+            <div class="seg" role="radiogroup" id="set-theme">
+              <button type="button" data-val="system">System</button>
+              <button type="button" data-val="light">Light</button>
+              <button type="button" data-val="dark">Dark</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="label">Shortcuts</h3>
+          <div class="row">
+            <span>Start / Pause</span>
+            <kbd id="set-hotkey-toggle">Ctrl+Alt+P</kbd>
+          </div>
+          <div class="row">
+            <span>Skip phase</span>
+            <kbd id="set-hotkey-skip">Ctrl+Alt+S</kbd>
+          </div>
+          <div class="row">
+            <span>Reset</span>
+            <kbd id="set-hotkey-reset">Ctrl+Alt+R</kbd>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="label">Startup</h3>
+          <label class="row toggle">
+            <span>Launch on Windows startup</span>
+            <input type="checkbox" id="set-autostart" />
+          </label>
+          <label class="row toggle">
+            <span>Minimize to tray on close</span>
+            <input type="checkbox" id="set-minimize-to-tray" />
+          </label>
+        </section>
+
+        <p class="settings-version">FocusTimer v0.1.0</p>
+      </div>
+    </section>
 
     <section class="task-panel" id="task-panel">
       <header class="task-panel-header">

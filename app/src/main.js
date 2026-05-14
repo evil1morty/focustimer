@@ -1,6 +1,7 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { initTasks } from "./js/tasks.js";
+import { initSettings } from "./js/settings.js";
 
 const PHASE_LABEL = {
   stopped: "Ready",
@@ -131,9 +132,6 @@ function bind() {
     render(await invoke("timer_start", { phase: next }));
   });
 
-  document.getElementById("btn-settings")?.addEventListener("click", () => {
-    console.log("settings — TODO task #6");
-  });
   document.getElementById("btn-stats")?.addEventListener("click", () => {
     console.log("stats — TODO task #11");
   });
@@ -143,6 +141,7 @@ function bind() {
 window.addEventListener("DOMContentLoaded", async () => {
   bind();
   initTasks();
+  initSettings();
   await refresh();
   await listen("timer://tick", (e) => render(e.payload));
 });
