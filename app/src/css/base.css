@@ -112,21 +112,17 @@ select:focus-visible,
 }
 
 /*
- * View switching — single source of truth on body[data-view]. The
- * settings and stats panels are hidden by default; the active view
- * unhides exactly one. Previously the toggle was split across
- * body[data-view] AND a per-panel `hidden` attribute, which let the
- * panel flash through for one frame between the two synchronous JS
- * writes when navigating back to the timer.
+ * View switching — single source of truth on body[data-view]. Each
+ * overlay panel (.settings-screen, .stats-screen) declares display:flex
+ * in its own file; we need higher specificity than that to override, so
+ * the rule that hides them uses :not() to beat the tie. This was a
+ * subtle bug previously — using `.settings-screen { display: none }`
+ * alone got clobbered by the panel's own `.settings-screen { display:
+ * flex }` because both have specificity 0-0-1 and later-import wins.
  */
-.settings-screen,
-.stats-screen {
+body:not([data-view="settings"]) .settings-screen,
+body:not([data-view="stats"]) .stats-screen {
   display: none;
-}
-
-body[data-view="settings"] .settings-screen,
-body[data-view="stats"] .stats-screen {
-  display: flex;
 }
 
 body[data-view="settings"] .timer-screen,
