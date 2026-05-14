@@ -9,6 +9,7 @@ import {
 } from "./js/api.js";
 import { initTasks } from "./js/tasks.js";
 import { initSettings } from "./js/settings.js";
+import { initStats } from "./js/stats.js";
 
 const PHASE_LABEL = {
   stopped: "Ready",
@@ -110,16 +111,13 @@ function bind() {
     const next = order[(order.indexOf(cur) + 1) % order.length];
     render(await timerStart(next));
   });
-
-  document.getElementById("btn-stats")?.addEventListener("click", () => {
-    console.log("stats — TODO task #11");
-  });
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   bind();
   initTasks();
   initSettings();
+  initStats();
   render(await timerSnapshot());
   listen(Events.TIMER_TICK, render);
 });

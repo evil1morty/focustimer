@@ -4,6 +4,7 @@ mod error;
 mod hotkeys;
 mod notify;
 mod settings;
+mod stats;
 mod tasks;
 mod timer;
 mod tray;
@@ -63,6 +64,7 @@ pub fn run() {
             tasks::tasks_set_current,
             settings::settings_get,
             settings::settings_set,
+            stats::stats_summary,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

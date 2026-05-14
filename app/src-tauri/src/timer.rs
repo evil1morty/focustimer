@@ -201,9 +201,11 @@ impl TimerEngine {
                         let autostart = state.auto_start_for(next);
                         state.begin_phase(next, autostart);
                         let snap = state.snapshot();
+                        let pomodoro_duration_s = snap.template.pomodoro_ms / 1000;
                         drop(state);
                         if finished == Phase::Pomodoro {
                             crate::tasks::increment_current(&app);
+                            crate::stats::record_pomodoro(&app, pomodoro_duration_s);
                         }
                         let _ = app.emit("timer://phase-finished", &finished);
                         Some(snap)

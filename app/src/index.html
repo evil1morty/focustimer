@@ -245,6 +245,67 @@
       </div>
     </section>
 
+    <section class="stats-screen" id="stats-screen" hidden>
+      <header class="settings-header">
+        <button class="icon-btn" id="btn-stats-back" aria-label="Back">
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <h2>Stats</h2>
+        <div style="width: 32px"></div>
+      </header>
+      <div class="stats-body">
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-num" id="kpi-today">0</div>
+            <div class="kpi-label">Today</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-num" id="kpi-week">0</div>
+            <div class="kpi-label">This week</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-num" id="kpi-streak">0</div>
+            <div class="kpi-label">Day streak</div>
+          </div>
+        </div>
+
+        <section class="stats-section">
+          <h3 class="label">Last 14 days</h3>
+          <svg
+            class="bar-chart"
+            id="bar-chart"
+            viewBox="0 0 280 110"
+            preserveAspectRatio="none"
+            aria-label="Daily pomodoro count over the last 14 days"
+          ></svg>
+          <div class="bar-axis" id="bar-axis"></div>
+        </section>
+
+        <section class="stats-section">
+          <h3 class="label">Totals</h3>
+          <div class="row">
+            <span>All-time pomodoros</span>
+            <span class="val" id="totals-all-time">0</span>
+          </div>
+          <div class="row">
+            <span>Total focus time</span>
+            <span class="val" id="totals-focus">0h</span>
+          </div>
+        </section>
+      </div>
+    </section>
+
     <section class="task-panel" id="task-panel">
       <header class="task-panel-header">
         <span class="label">Tasks</span>

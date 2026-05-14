@@ -128,6 +128,27 @@ export const settingsGet = () => invoke("settings_get");
 /** @param {AppSettings} settings @returns {Promise<AppSettings>} */
 export const settingsSet = (settings) => invoke("settings_set", { settings });
 
+/* --------- Stats commands ---------- */
+
+/**
+ * @typedef {object} DailyEntry
+ * @property {string} date
+ * @property {number} count
+ * @property {number} focus_seconds
+ *
+ * @typedef {object} StatsSummary
+ * @property {number} today
+ * @property {number} today_focus_seconds
+ * @property {number} this_week
+ * @property {number} all_time
+ * @property {number} all_time_focus_seconds
+ * @property {number} streak_days
+ * @property {DailyEntry[]} daily
+ */
+
+/** @returns {Promise<StatsSummary>} */
+export const statsSummary = () => invoke("stats_summary");
+
 /* --------- Event channels ---------- */
 
 export const Events = Object.freeze({
@@ -138,4 +159,5 @@ export const Events = Object.freeze({
   TASKS_CHANGED: "tasks://changed",
   SETTINGS_CHANGED: "settings://changed",
   TRAY_OPEN_SETTINGS: "tray://open-settings",
+  STATS_CHANGED: "stats://changed",
 });

@@ -1,0 +1,117 @@
+/* Stats screen: KPI cards + 14-day SVG bar chart. */
+
+.stats-screen {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.stats-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-4) var(--space-6);
+}
+
+.stats-body::-webkit-scrollbar {
+  width: 6px;
+}
+.stats-body::-webkit-scrollbar-thumb {
+  background: var(--surface-translucent-active);
+  border-radius: 3px;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.kpi {
+  background: var(--surface-translucent);
+  border: 1px solid var(--border-translucent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-2);
+  text-align: center;
+}
+
+.kpi-num {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.kpi-label {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.stats-section {
+  background: var(--surface-translucent);
+  border: 1px solid var(--border-translucent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.stats-section .label {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--fg-muted);
+}
+
+.stats-section .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fs-small);
+  padding: 4px 0;
+}
+
+.stats-section .row .val {
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-strong);
+}
+
+.bar-chart {
+  width: 100%;
+  height: 110px;
+}
+
+.bar-chart rect {
+  fill: var(--fg);
+  transition: opacity var(--t-base);
+}
+
+.bar-chart rect.empty {
+  opacity: 0.18;
+}
+
+.bar-axis {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+  text-align: center;
+  margin-top: 4px;
+}
+
+body[data-view="stats"] .timer-screen,
+body[data-view="stats"] .task-panel,
+body[data-view="stats"] .settings-screen {
+  display: none;
+}
+
+body[data-view="timer"] .stats-screen[hidden],
+body[data-view="settings"] .stats-screen {
+  display: none;
+}
