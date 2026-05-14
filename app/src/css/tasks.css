@@ -17,7 +17,7 @@
   color: var(--panel-fg);
   border-top-left-radius: var(--radius-xl);
   border-top-right-radius: var(--radius-xl);
-  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.22);
+  box-shadow: var(--elev-3);
   transform: translateY(calc(100% - var(--drawer-handle-h)));
   transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -35,6 +35,7 @@ body[data-view="stats"] .task-panel {
 
 /* ---------- drawer handle ---------- */
 .task-drawer-handle {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -49,7 +50,32 @@ body[data-view="stats"] .task-panel {
   font: inherit;
   text-align: left;
   flex: 0 0 auto;
-  transition: border-color var(--t-fast);
+  transition:
+    border-color var(--t-fast),
+    background-color var(--t-fast);
+}
+
+/* Grab affordance — a small horizontal pill at the top edge that signals
+   the surface can slide. Lifted style from iOS / Android bottom sheets. */
+.task-drawer-handle::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--panel-border);
+  transition: background-color var(--t-fast);
+}
+
+.task-drawer-handle:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.task-drawer-handle:hover::before {
+  background: var(--panel-fg-muted);
 }
 
 body[data-tasks="open"] .task-drawer-handle {
@@ -148,13 +174,12 @@ body[data-tasks="open"] .task-drawer-handle .chevron {
 }
 
 .task-row:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.035);
 }
 
 .task-row.is-current {
-  background: rgba(0, 0, 0, 0.06);
-  border-left: 3px solid var(--accent);
-  padding-left: 7px;
+  background: rgba(0, 0, 0, 0.055);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .task-row.is-done {

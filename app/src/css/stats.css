@@ -29,11 +29,36 @@
 }
 
 .kpi {
+  position: relative;
   background: var(--surface-translucent);
   border: 1px solid var(--border-translucent);
   border-radius: var(--radius-lg);
   padding: var(--space-3) var(--space-2);
   text-align: center;
+  transition:
+    background-color var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.kpi:hover {
+  background: var(--surface-translucent-hover);
+  border-color: var(--fg-muted);
+}
+
+.kpi::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--space-3);
+  right: var(--space-3);
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(245, 241, 234, 0.18),
+    transparent
+  );
+  pointer-events: none;
 }
 
 .kpi-num {
@@ -84,15 +109,20 @@
 .bar-chart {
   width: 100%;
   height: 110px;
+  /* Subtle baseline rule under all bars. */
+  border-bottom: 1px solid var(--border-translucent);
+  padding-bottom: 2px;
 }
 
 .bar-chart rect {
   fill: var(--fg);
-  transition: opacity var(--t-base);
+  transition:
+    opacity var(--t-base),
+    fill var(--t-base);
 }
 
 .bar-chart rect.empty {
-  opacity: 0.18;
+  opacity: 0.16;
 }
 
 .bar-axis {

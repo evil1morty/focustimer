@@ -38,17 +38,23 @@
 
 .current-task-title.is-clickable {
   cursor: pointer;
-  padding: 4px 12px;
+  padding: 4px 14px;
   border-radius: var(--radius-pill);
-  border: 1px dashed var(--border-translucent);
+  background: var(--surface-translucent);
+  border: 1px solid transparent;
   transition:
     background-color var(--t-fast),
-    border-color var(--t-fast);
+    border-color var(--t-fast),
+    transform var(--t-fast);
 }
 
 .current-task-title.is-clickable:hover {
   background: var(--surface-translucent-hover);
-  border-color: var(--fg-muted);
+  border-color: var(--border-translucent);
+}
+
+.current-task-title.is-clickable:active {
+  transform: scale(0.97);
 }
 
 .ring-wrap {
@@ -99,26 +105,32 @@
   font-weight: 500;
   line-height: var(--lh-tight);
   letter-spacing: var(--tracking-display);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums lining-nums;
   color: var(--fg-strong);
+  /* Subtle warmth so the digits don't read as flat decals. */
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
 }
 
 .cycle-bar {
   display: flex;
-  gap: 5px;
-  height: 4px;
+  gap: 6px;
+  height: 6px;
+  margin-top: 4px;
 }
 
 .cycle-bar .seg {
-  width: 16px;
-  height: 4px;
+  width: 22px;
+  height: 3px;
   border-radius: 2px;
   background: var(--surface-translucent);
-  transition: background-color var(--t-base);
+  transition:
+    background-color var(--t-base),
+    transform var(--t-base);
 }
 
 .cycle-bar .seg.filled {
   background: var(--fg);
+  transform: scaleY(1.4);
 }
 
 .controls {
@@ -129,8 +141,8 @@
 }
 
 .btn-primary {
-  min-width: 168px;
-  height: 48px;
+  min-width: 172px;
+  height: 50px;
   padding: 0 var(--space-6);
   background: var(--fg);
   color: var(--accent);
@@ -139,23 +151,27 @@
   font-size: 15px;
   letter-spacing: 0.02em;
   border-radius: var(--radius-pill);
+  box-shadow: var(--elev-2);
   transition:
     transform var(--t-fast),
-    filter var(--t-fast);
+    filter var(--t-fast),
+    box-shadow var(--t-fast);
 }
 
 .btn-primary:hover {
-  filter: brightness(0.96);
+  filter: brightness(0.97);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: translateY(1px) scale(0.98);
+  box-shadow: var(--elev-1);
 }
 
 .btn-ghost {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
+  height: 38px;
   padding: 0 14px;
   border: 1px solid var(--border-translucent);
   border-radius: var(--radius-pill);
@@ -164,10 +180,15 @@
   background: transparent;
   transition:
     background-color var(--t-fast),
-    border-color var(--t-fast);
+    border-color var(--t-fast),
+    transform var(--t-fast);
 }
 
 .btn-ghost:hover {
   background: var(--surface-translucent-hover);
   border-color: var(--fg-muted);
+}
+
+.btn-ghost:active {
+  transform: scale(0.97);
 }

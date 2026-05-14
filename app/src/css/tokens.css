@@ -66,13 +66,18 @@
   --ring-size: 272px;
   --ring-stroke: 5px;
   --drawer-handle-h: 48px;
-  --ring-track: rgba(245, 241, 234, 0.14);
-  --ring-progress: rgba(245, 241, 234, 0.92);
+  --ring-track: rgba(245, 241, 234, 0.10);
+  --ring-progress: rgba(245, 241, 234, 0.95);
 
   /* motion */
-  --t-fast: 120ms ease;
-  --t-base: 200ms ease;
+  --t-fast: 100ms ease;
+  --t-base: 180ms cubic-bezier(0.4, 0, 0.2, 1);
   --t-phase: 480ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* elevation — subtle layered shadows for surface depth */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --elev-2: 0 4px 10px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+  --elev-3: 0 -10px 28px rgba(0, 0, 0, 0.22);
 }
 
 :root,
