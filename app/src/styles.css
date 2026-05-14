@@ -1,28 +1,60 @@
-:root {
-  font-family: Inter, "Segoe UI", system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  color: #0f0f0f;
-  background: #f6f6f6;
+@import "./css/tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--fg);
+  background: var(--accent);
+  transition: background-color var(--t-phase);
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum" 1;
 }
 
 body {
-  margin: 0;
-}
-
-.container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  text-align: center;
+  user-select: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background: #2f2f2f;
-  }
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* utility classes mirroring the design system */
+.label {
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.title {
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: var(--lh-title);
+}
+
+.muted {
+  color: var(--fg-muted);
 }
