@@ -1,0 +1,21 @@
+# Reference project (not part of our codebase)
+FocusTimer-main/
+
+# Node
+node_modules/
+*.log
+
+# Rust / Tauri build artifacts
+target/
+**/target/
+
+# Claude / OMC session state
+.omc/
+.claude/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
