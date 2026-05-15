@@ -55,12 +55,7 @@
   left: var(--space-3);
   right: var(--space-3);
   height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(245, 241, 234, 0.18),
-    transparent
-  );
+  background: linear-gradient(to right, transparent, rgba(245, 241, 234, 0.18), transparent);
   pointer-events: none;
 }
 

@@ -10,6 +10,7 @@ import {
 import { initTasks } from "./js/tasks.js";
 import { initSettings } from "./js/settings.js";
 import { initStats } from "./js/stats.js";
+import { byId, h, setChildren } from "./js/dom.js";
 
 const PHASE_LABEL = {
   stopped: "Ready",
@@ -20,19 +21,22 @@ const PHASE_LABEL = {
 
 const els = {
   body: document.body,
-  display: document.getElementById("timer-display"),
-  primary: document.getElementById("btn-primary"),
-  skip: document.getElementById("btn-skip"),
-  cycleBar: document.getElementById("cycle-bar"),
-  phaseLabel: document.getElementById("phase-label"),
-  ringProgress: document.getElementById("ring-progress"),
-  taskProgressFill: document.getElementById("current-task-progress-fill"),
+  display: byId("timer-display"),
+  primary: byId("btn-primary"),
+  skip: byId("btn-skip"),
+  cycleBar: byId("cycle-bar"),
+  phaseLabel: byId("phase-label"),
+  ringProgress: byId("ring-progress"),
+  taskProgressFill: byId("current-task-progress-fill"),
+  phasePill: byId("phase-pill"),
 };
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 46;
 
 /** @type {import("./js/api.js").TimerSnapshot|null} */
 let lastSnap = null;
+/** Cached cycle-bar segment elements — rebuilt only when the cycle count changes. */
+let cycleSegs = [];
 
 function fmtMs(ms) {
   const total = Math.max(0, Math.round(ms / 1000));
@@ -52,18 +56,14 @@ function dotsFilled(snap) {
 
 function renderCycleBar(snap) {
   const n = snap.cycles_per_long_break || 4;
-  const filled = dotsFilled(snap);
-  if (els.cycleBar.childElementCount !== n) {
-    els.cycleBar.innerHTML = "";
-    for (let i = 0; i < n; i++) {
-      const s = document.createElement("span");
-      s.className = "seg";
-      els.cycleBar.appendChild(s);
-    }
+  if (cycleSegs.length !== n) {
+    cycleSegs = Array.from({ length: n }, () => h("span", { class: "seg" }));
+    setChildren(els.cycleBar, cycleSegs);
   }
-  els.cycleBar.querySelectorAll(".seg").forEach((s, i) => {
-    s.classList.toggle("filled", i < filled);
-  });
+  const filled = dotsFilled(snap);
+  for (let i = 0; i < cycleSegs.length; i++) {
+    cycleSegs[i].classList.toggle("filled", i < filled);
+  }
 }
 
 function renderRing(snap) {
@@ -88,9 +88,7 @@ function render(snap) {
   document.title = `${text} · ${PHASE_LABEL[snap.phase] ?? "FocusTimer"} — FocusTimer`;
   els.phaseLabel.textContent = PHASE_LABEL[snap.phase] ?? "FocusTimer";
 
-  if (snap.is_running) els.primary.textContent = "Pause";
-  else if (snap.is_paused) els.primary.textContent = "Resume";
-  else els.primary.textContent = "Start";
+  els.primary.textContent = snap.is_running ? "Pause" : snap.is_paused ? "Resume" : "Start";
 
   renderRing(snap);
   renderCycleBar(snap);
@@ -106,17 +104,18 @@ async function onPrimary() {
   }
 }
 
+async function onPhasePillClick() {
+  if (!lastSnap) return;
+  const order = ["pomodoro", "short_break", "long_break"];
+  const cur = lastSnap.phase === "stopped" ? "pomodoro" : lastSnap.phase;
+  const next = order[(order.indexOf(cur) + 1) % order.length];
+  render(await timerStart(next));
+}
+
 function bind() {
   els.primary.addEventListener("click", onPrimary);
   els.skip.addEventListener("click", async () => render(await timerSkip()));
-
-  document.getElementById("phase-pill")?.addEventListener("click", async () => {
-    if (!lastSnap) return;
-    const order = ["pomodoro", "short_break", "long_break"];
-    const cur = lastSnap.phase === "stopped" ? "pomodoro" : lastSnap.phase;
-    const next = order[(order.indexOf(cur) + 1) % order.length];
-    render(await timerStart(next));
-  });
+  els.phasePill?.addEventListener("click", onPhasePillClick);
 }
 
 window.addEventListener("DOMContentLoaded", async () => {

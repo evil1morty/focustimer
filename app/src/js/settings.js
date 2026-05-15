@@ -1,42 +1,48 @@
 import { audioPreview, Events, listen, settingsGet, settingsSet } from "./api.js";
+import { $$, byId } from "./dom.js";
 
 const els = {
-  panel: document.getElementById("settings-screen"),
-  back: document.getElementById("btn-settings-back"),
-  open: document.getElementById("btn-settings"),
+  panel: byId("settings-screen"),
+  back: byId("btn-settings-back"),
+  open: byId("btn-settings"),
 
-  pomodoro: document.getElementById("set-pomodoro"),
-  pomodoroVal: document.getElementById("set-pomodoro-val"),
-  shortBreak: document.getElementById("set-short-break"),
-  shortBreakVal: document.getElementById("set-short-break-val"),
-  longBreak: document.getElementById("set-long-break"),
-  longBreakVal: document.getElementById("set-long-break-val"),
-  cycles: document.getElementById("set-cycles"),
+  pomodoro: byId("set-pomodoro"),
+  pomodoroVal: byId("set-pomodoro-val"),
+  shortBreak: byId("set-short-break"),
+  shortBreakVal: byId("set-short-break-val"),
+  longBreak: byId("set-long-break"),
+  longBreakVal: byId("set-long-break-val"),
+  cycles: byId("set-cycles"),
 
-  autoBreaks: document.getElementById("set-auto-breaks"),
-  autoPomos: document.getElementById("set-auto-pomos"),
-  announce: document.getElementById("set-announce"),
-  pauseOnLock: document.getElementById("set-pause-on-lock"),
+  autoBreaks: byId("set-auto-breaks"),
+  autoPomos: byId("set-auto-pomos"),
+  announce: byId("set-announce"),
+  pauseOnLock: byId("set-pause-on-lock"),
 
-  alarmSound: document.getElementById("set-alarm-sound"),
-  alarmVolume: document.getElementById("set-alarm-volume"),
-  alarmVolumeVal: document.getElementById("set-alarm-volume-val"),
-  tickingSound: document.getElementById("set-ticking-sound"),
-  tickingVolume: document.getElementById("set-ticking-volume"),
-  tickingVolumeVal: document.getElementById("set-ticking-volume-val"),
+  alarmSound: byId("set-alarm-sound"),
+  alarmVolume: byId("set-alarm-volume"),
+  alarmVolumeVal: byId("set-alarm-volume-val"),
+  tickingSound: byId("set-ticking-sound"),
+  tickingVolume: byId("set-ticking-volume"),
+  tickingVolumeVal: byId("set-ticking-volume-val"),
 
-  themeSeg: document.getElementById("set-theme"),
+  themeSeg: byId("set-theme"),
 
-  hotkeyToggle: document.getElementById("set-hotkey-toggle"),
-  hotkeySkip: document.getElementById("set-hotkey-skip"),
-  hotkeyReset: document.getElementById("set-hotkey-reset"),
+  hotkeyToggle: byId("set-hotkey-toggle"),
+  hotkeySkip: byId("set-hotkey-skip"),
+  hotkeyReset: byId("set-hotkey-reset"),
 
-  autostart: document.getElementById("set-autostart"),
-  minimizeToTray: document.getElementById("set-minimize-to-tray"),
+  autostart: byId("set-autostart"),
+  minimizeToTray: byId("set-minimize-to-tray"),
 
-  alarmPreview: document.getElementById("set-alarm-preview"),
-  tickingPreview: document.getElementById("set-ticking-preview"),
+  alarmPreview: byId("set-alarm-preview"),
+  tickingPreview: byId("set-ticking-preview"),
 };
+
+// Cached theme-segment buttons. The control is static markup so the
+// NodeList captured at module load is stable; no need to re-query per
+// render or per click.
+const themeButtons = els.themeSeg ? $$("button", els.themeSeg) : [];
 
 /** @type {import("./api.js").AppSettings|null} */
 let current = null;
@@ -75,7 +81,7 @@ function render(s) {
   els.tickingVolume.value = Math.round(s.ticking_volume * 100);
   els.tickingVolumeVal.textContent = `${els.tickingVolume.value}%`;
 
-  els.themeSeg.querySelectorAll("button").forEach((b) => {
+  themeButtons.forEach((b) => {
     b.classList.toggle("active", b.dataset.val === s.theme);
   });
 
@@ -165,7 +171,7 @@ function bindControls() {
     if (!btn) return;
     current.theme = btn.dataset.val;
     applyTheme(current.theme);
-    els.themeSeg.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
+    themeButtons.forEach((b) => b.classList.toggle("active", b === btn));
     scheduleSave();
   });
 }

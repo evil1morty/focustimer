@@ -1,19 +1,20 @@
 import { Events, listen, statsSummary } from "./api.js";
+import { $$, byId, h, setChildren } from "./dom.js";
 
 const els = {
-  panel: document.getElementById("stats-screen"),
-  back: document.getElementById("btn-stats-back"),
-  open: document.getElementById("btn-stats"),
-  today: document.getElementById("kpi-today"),
-  week: document.getElementById("kpi-week"),
-  streak: document.getElementById("kpi-streak"),
-  chart: document.getElementById("bar-chart"),
-  axis: document.getElementById("bar-axis"),
-  totalAllTime: document.getElementById("totals-all-time"),
-  totalFocus: document.getElementById("totals-focus"),
-  empty: document.getElementById("stats-empty"),
-  kpis: document.getElementById("kpi-row"),
-  sections: document.querySelectorAll(".stats-screen .stats-section"),
+  panel: byId("stats-screen"),
+  back: byId("btn-stats-back"),
+  open: byId("btn-stats"),
+  today: byId("kpi-today"),
+  week: byId("kpi-week"),
+  streak: byId("kpi-streak"),
+  chart: byId("bar-chart"),
+  axis: byId("bar-axis"),
+  totalAllTime: byId("totals-all-time"),
+  totalFocus: byId("totals-focus"),
+  empty: byId("stats-empty"),
+  kpis: byId("kpi-row"),
+  sections: $$(".stats-screen .stats-section"),
 };
 
 function setView(view) {
@@ -42,18 +43,24 @@ function renderChart(s) {
   const H = 110;
   const gap = 4;
   const barW = (W - gap * (days.length - 1)) / days.length;
-  let svg = "";
-  days.forEach((d, i) => {
-    const h = (d.count / max) * (H - 8);
-    const x = i * (barW + gap);
-    const y = H - h;
-    const cls = d.count === 0 ? "empty" : "";
-    svg += `<rect class="${cls}" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${Math.max(2, h).toFixed(2)}" rx="2" />`;
-  });
-  els.chart.innerHTML = svg;
-  els.axis.innerHTML = days
-    .map((d, i) => `<span>${i % 2 === 0 ? dayLabel(d.date) : ""}</span>`)
-    .join("");
+  setChildren(
+    els.chart,
+    days.map((d, i) => {
+      const barH = (d.count / max) * (H - 8);
+      return h("rect", {
+        class: d.count === 0 ? "empty" : null,
+        x: (i * (barW + gap)).toFixed(2),
+        y: (H - barH).toFixed(2),
+        width: barW.toFixed(2),
+        height: Math.max(2, barH).toFixed(2),
+        rx: 2,
+      });
+    }),
+  );
+  setChildren(
+    els.axis,
+    days.map((d, i) => h("span", null, i % 2 === 0 ? dayLabel(d.date) : "")),
+  );
 }
 
 /** @param {import("./api.js").StatsSummary} s */

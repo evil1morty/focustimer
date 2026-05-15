@@ -10,9 +10,9 @@
  * that had focus before the dialog appeared.
  */
 
-let built = false;
-let backdropEl;
-let modalEl;
+import { h } from "./dom.js";
+
+let backdropEl = null;
 let titleEl;
 let bodyEl;
 let cancelEl;
@@ -21,29 +21,32 @@ let currentResolve = null;
 let previouslyFocused = null;
 
 function ensureBuilt() {
-  if (built) return;
-  built = true;
+  if (backdropEl) return;
 
-  backdropEl = document.createElement("div");
-  backdropEl.className = "modal-backdrop";
-  backdropEl.hidden = true;
-  backdropEl.innerHTML = `
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-body">
-      <h3 class="modal-title" id="modal-title"></h3>
-      <p class="modal-body" id="modal-body"></p>
-      <div class="modal-actions">
-        <button type="button" class="modal-cancel"></button>
-        <button type="button" class="modal-confirm"></button>
-      </div>
-    </div>
-  `;
+  titleEl = h("h3", { class: "modal-title", id: "modal-title" });
+  bodyEl = h("p", { class: "modal-body", id: "modal-body" });
+  cancelEl = h("button", { type: "button", class: "modal-cancel" });
+  confirmEl = h("button", { type: "button", class: "modal-confirm" });
+
+  backdropEl = h(
+    "div",
+    { class: "modal-backdrop", hidden: true },
+    h(
+      "div",
+      {
+        class: "modal",
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-labelledby": "modal-title",
+        "aria-describedby": "modal-body",
+      },
+      titleEl,
+      bodyEl,
+      h("div", { class: "modal-actions" }, cancelEl, confirmEl),
+    ),
+  );
+
   document.body.appendChild(backdropEl);
-
-  modalEl = backdropEl.querySelector(".modal");
-  titleEl = backdropEl.querySelector(".modal-title");
-  bodyEl = backdropEl.querySelector(".modal-body");
-  cancelEl = backdropEl.querySelector(".modal-cancel");
-  confirmEl = backdropEl.querySelector(".modal-confirm");
 
   backdropEl.addEventListener("mousedown", (e) => {
     if (e.target === backdropEl) resolve(false);
@@ -60,7 +63,9 @@ function onKeydown(e) {
     return;
   }
   if (e.key === "Tab") {
-    // Two-button trap: bounce focus between Cancel and Confirm.
+    // Two-button trap: bounce focus between Cancel and Confirm. If Cancel
+    // is hidden (alert variant) leave default Tab handling.
+    if (cancelEl.hidden) return;
     e.preventDefault();
     const active = document.activeElement;
     if (e.shiftKey) {
@@ -92,6 +97,40 @@ function resolve(value) {
   r(value);
 }
 
+function open({ title, body, confirmLabel, cancelLabel, danger, alert }) {
+  ensureBuilt();
+  // If a prior call is still open, cancel it before showing the next one.
+  if (currentResolve) resolve(false);
+
+  titleEl.textContent = title;
+  bodyEl.textContent = body ?? "";
+  bodyEl.style.display = body ? "" : "none";
+  confirmEl.textContent = confirmLabel;
+  confirmEl.classList.toggle("is-danger", !!danger);
+  cancelEl.textContent = cancelLabel ?? "";
+  cancelEl.hidden = !!alert;
+
+  previouslyFocused = document.activeElement;
+  backdropEl.hidden = false;
+  // Force a layout pass before setting is-open so the opacity transition
+  // actually plays. Without this the class arrives in the same frame the
+  // element first paints and no transition runs.
+  void backdropEl.offsetWidth;
+  backdropEl.classList.add("is-open");
+
+  // Dangerous actions default focus to Cancel (safer). Alerts have no
+  // Cancel; everything else defaults focus to Confirm. The 30ms delay
+  // lets the Tauri webview settle so focus actually sticks.
+  setTimeout(() => {
+    if (alert || !danger) confirmEl.focus();
+    else cancelEl.focus();
+  }, 30);
+
+  return new Promise((res) => {
+    currentResolve = res;
+  });
+}
+
 /**
  * @param {object} opts
  * @param {string} opts.title
@@ -108,29 +147,7 @@ export function showConfirm({
   cancelLabel = "Cancel",
   danger = false,
 }) {
-  ensureBuilt();
-  // If a prior call is still open, cancel it.
-  if (currentResolve) resolve(false);
-
-  titleEl.textContent = title;
-  bodyEl.textContent = body;
-  bodyEl.style.display = body ? "" : "none";
-  cancelEl.textContent = cancelLabel;
-  confirmEl.textContent = confirmLabel;
-  confirmEl.classList.toggle("is-danger", !!danger);
-  cancelEl.hidden = false;
-
-  previouslyFocused = document.activeElement;
-  backdropEl.hidden = false;
-  // Force layout before adding the class so the transition plays.
-  void backdropEl.offsetWidth;
-  backdropEl.classList.add("is-open");
-  // Dangerous actions default focus to Cancel (safer); others to Confirm.
-  setTimeout(() => (danger ? cancelEl : confirmEl).focus(), 30);
-
-  return new Promise((res) => {
-    currentResolve = res;
-  });
+  return open({ title, body, confirmLabel, cancelLabel, danger, alert: false });
 }
 
 /**
@@ -141,23 +158,5 @@ export function showConfirm({
  * @returns {Promise<void>}
  */
 export async function showAlert({ title, body = "", confirmLabel = "OK" }) {
-  ensureBuilt();
-  if (currentResolve) resolve(false);
-
-  titleEl.textContent = title;
-  bodyEl.textContent = body;
-  bodyEl.style.display = body ? "" : "none";
-  confirmEl.textContent = confirmLabel;
-  confirmEl.classList.remove("is-danger");
-  cancelEl.hidden = true;
-
-  previouslyFocused = document.activeElement;
-  backdropEl.hidden = false;
-  void backdropEl.offsetWidth;
-  backdropEl.classList.add("is-open");
-  setTimeout(() => confirmEl.focus(), 30);
-
-  await new Promise((res) => {
-    currentResolve = res;
-  });
+  await open({ title, body, confirmLabel, alert: true });
 }

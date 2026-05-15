@@ -10,16 +10,29 @@ import {
   timerStart,
 } from "./api.js";
 import { showConfirm } from "./modal.js";
+import { $$, byId, h, on, setChildren } from "./dom.js";
 
 const els = {
-  list: document.getElementById("task-list"),
-  count: document.getElementById("task-count"),
-  form: document.getElementById("add-task-form"),
-  input: document.getElementById("add-task-input"),
-  currentTaskTitle: document.getElementById("current-task-title"),
-  currentTaskHeadline: document.getElementById("current-task"),
-  handle: document.getElementById("task-drawer-handle"),
+  list: byId("task-list"),
+  count: byId("task-count"),
+  form: byId("add-task-form"),
+  input: byId("add-task-input"),
+  currentTaskTitle: byId("current-task-title"),
+  currentTaskHeadline: byId("current-task"),
+  handle: byId("task-drawer-handle"),
 };
+
+/** @type {import("./api.js").Task[]} */
+let tasks = [];
+let dragId = null;
+/**
+ * Cached timer state — populated from TIMER_TICK so the drawer handle and
+ * task rows can reflect whether a pomodoro is currently in progress for the
+ * active task without polling.
+ */
+let timerState = { phase: "stopped", isRunning: false };
+/** @type {HTMLElement|null} */
+let dropIndicator = null;
 
 function openDrawer() {
   document.body.dataset.tasks = "open";
@@ -38,23 +51,9 @@ function toggleDrawer() {
   else openDrawer();
 }
 
-/** @type {import("./api.js").Task[]} */
-let tasks = [];
-let dragId = null;
-/**
- * Cached timer state — populated from TIMER_TICK so the drawer handle and
- * task rows can reflect whether a pomodoro is currently in progress for the
- * active task without polling.
- */
-let timerState = { phase: "stopped", isRunning: false };
-/** @type {HTMLElement|null} */
-let dropIndicator = null;
-
 function ensureIndicator() {
   if (!dropIndicator) {
-    dropIndicator = document.createElement("li");
-    dropIndicator.className = "drop-indicator";
-    dropIndicator.setAttribute("aria-hidden", "true");
+    dropIndicator = h("li", { class: "drop-indicator", "aria-hidden": "true" });
   }
   return dropIndicator;
 }
@@ -63,52 +62,65 @@ function clearIndicator() {
   dropIndicator?.remove();
 }
 
-function escapeHtml(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
+/** Build a task row. Children are passed as text nodes via h(), so the
+ *  task title can never escape into HTML — no manual escapeHtml needed. */
 function renderTaskRow(task) {
-  const li = document.createElement("li");
-  li.className = "task-row";
-  li.dataset.id = String(task.id);
-  if (task.is_current) li.classList.add("is-current");
-  if (task.completed) li.classList.add("is-done");
-  li.draggable = true;
-  const safeTitle = escapeHtml(task.title);
-  const playLabel = task.is_current
-    ? "Start a pomodoro on this task"
-    : "Pick and start this task";
-  li.innerHTML = `
-    <button class="task-check" data-act="toggle" aria-label="Toggle complete">
-      <span class="check-box"></span>
-    </button>
-    <span class="task-title" title="${safeTitle}">${safeTitle}</span>
-    <button class="task-count" data-act="edit-est" title="Click to change estimate"
-            aria-label="${task.done_pomodoros} of ${task.est_pomodoros} pomodoros — click to edit">
-      ${task.done_pomodoros}/${task.est_pomodoros}
-    </button>
-    <button class="task-play" data-act="play" title="Start working on this task"
-            aria-label="${playLabel}">
-      <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
-        <polygon points="6 4 20 12 6 20 6 4" />
-      </svg>
-    </button>
-    <button class="task-del" data-act="del" aria-label="Delete">×</button>
-  `;
-  return li;
+  const playLabel = task.is_current ? "Start a pomodoro on this task" : "Pick and start this task";
+  const cls = ["task-row", task.is_current && "is-current", task.completed && "is-done"]
+    .filter(Boolean)
+    .join(" ");
+  return h(
+    "li",
+    { class: cls, draggable: true, dataset: { id: task.id } },
+    h(
+      "button",
+      {
+        class: "task-check",
+        "data-act": "toggle",
+        "aria-label": "Toggle complete",
+      },
+      h("span", { class: "check-box" }),
+    ),
+    h("span", { class: "task-title", title: task.title }, task.title),
+    h(
+      "button",
+      {
+        class: "task-count",
+        "data-act": "edit-est",
+        title: "Click to change estimate",
+        "aria-label": `${task.done_pomodoros} of ${task.est_pomodoros} pomodoros — click to edit`,
+      },
+      `${task.done_pomodoros}/${task.est_pomodoros}`,
+    ),
+    h(
+      "button",
+      {
+        class: "task-play",
+        "data-act": "play",
+        title: "Start working on this task",
+        "aria-label": playLabel,
+      },
+      h(
+        "svg",
+        {
+          viewBox: "0 0 24 24",
+          width: "13",
+          height: "13",
+          fill: "currentColor",
+          "aria-hidden": "true",
+        },
+        h("polygon", { points: "6 4 20 12 6 20 6 4" }),
+      ),
+    ),
+    h("button", { class: "task-del", "data-act": "del", "aria-label": "Delete" }, "×"),
+  );
 }
 
 function renderHandle(current) {
   if (!els.count) return;
   const handleLabel = els.handle?.querySelector(".label");
   const open = tasks.filter((t) => !t.completed).length;
-  const runningCurrent =
-    current && timerState.isRunning && timerState.phase === "pomodoro";
+  const runningCurrent = current && timerState.isRunning && timerState.phase === "pomodoro";
   if (runningCurrent) {
     if (handleLabel) handleLabel.textContent = "Now";
     els.count.textContent = current.title;
@@ -121,8 +133,7 @@ function renderHandle(current) {
 }
 
 function render() {
-  els.list.innerHTML = "";
-  for (const t of tasks) els.list.appendChild(renderTaskRow(t));
+  setChildren(els.list, tasks.map(renderTaskRow));
   const open = tasks.filter((t) => !t.completed).length;
   const current = tasks.find((t) => t.is_current && !t.completed);
   renderHandle(current);
@@ -162,7 +173,6 @@ function render() {
  * styling from the next render() (which lands via the tasks://changed event).
  */
 function flashSelection(id) {
-  // Wait for the post-tasks://changed render to run, then highlight the row.
   requestAnimationFrame(() => {
     const row = els.list.querySelector(`.task-row[data-id="${id}"]`);
     if (!row) return;
@@ -180,60 +190,69 @@ async function refresh() {
   }
 }
 
-function startEditEst(countEl, task) {
-  const input = document.createElement("input");
-  input.type = "number";
-  input.min = "1";
-  input.max = "20";
-  input.value = String(task.est_pomodoros);
-  input.className = "task-count-edit";
-  input.setAttribute("aria-label", "Estimated pomodoros");
-  countEl.replaceWith(input);
+/** Wraps the shared blur/keydown machinery for inline edits so we only
+ *  have to describe what to do on commit + how to seed the input. */
+function startInlineEditor(targetEl, init, commit) {
+  const input = init();
+  targetEl.replaceWith(input);
   input.focus();
   input.select();
-  const commit = async () => {
-    const parsed = parseInt(input.value, 10);
-    const next = Math.max(1, Math.min(20, Number.isFinite(parsed) ? parsed : task.est_pomodoros));
-    if (next !== task.est_pomodoros) {
-      await tasksUpdate(task.id, { est_pomodoros: next });
-    } else {
-      render();
-    }
-  };
-  input.addEventListener("blur", commit, { once: true });
-  input.addEventListener("keydown", (e) => {
+  let cancelled = false;
+  const unbindBlur = on(input, "blur", () => {
+    if (!cancelled) commit(input);
+  });
+  on(input, "keydown", (e) => {
     if (e.key === "Enter") input.blur();
     if (e.key === "Escape") {
-      input.removeEventListener("blur", commit);
+      cancelled = true;
+      unbindBlur();
       render();
     }
   });
 }
 
+function startEditEst(countEl, task) {
+  startInlineEditor(
+    countEl,
+    () =>
+      h("input", {
+        type: "number",
+        min: "1",
+        max: "20",
+        value: String(task.est_pomodoros),
+        class: "task-count-edit",
+        "aria-label": "Estimated pomodoros",
+      }),
+    async (input) => {
+      const parsed = parseInt(input.value, 10);
+      const next = Math.max(1, Math.min(20, Number.isFinite(parsed) ? parsed : task.est_pomodoros));
+      if (next !== task.est_pomodoros) {
+        await tasksUpdate(task.id, { est_pomodoros: next });
+      } else {
+        render();
+      }
+    },
+  );
+}
+
 function startInlineEdit(titleEl, task) {
-  const input = document.createElement("input");
-  input.type = "text";
-  input.value = task.title;
-  input.className = "task-title-edit";
-  titleEl.replaceWith(input);
-  input.focus();
-  input.select();
-  const commit = async () => {
-    const next = input.value.trim();
-    if (next && next !== task.title) {
-      await tasksUpdate(task.id, { title: next });
-    } else {
-      render();
-    }
-  };
-  input.addEventListener("blur", commit, { once: true });
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") input.blur();
-    if (e.key === "Escape") {
-      input.removeEventListener("blur", commit);
-      render();
-    }
-  });
+  startInlineEditor(
+    titleEl,
+    () =>
+      h("input", {
+        type: "text",
+        value: task.title,
+        class: "task-title-edit",
+      }),
+    async (input) => {
+      const next = input.value.trim();
+      if (next && next !== task.title) {
+        await tasksUpdate(task.id, { title: next });
+      } else {
+        render();
+      }
+    },
+  );
 }
 
 async function handleClick(e) {
@@ -293,7 +312,7 @@ function handleDragStart(e) {
   if (!li) return;
   // Commit any open inline edit before reordering — otherwise the input
   // gets wiped by the re-render and the user loses their text.
-  els.list.querySelectorAll("input").forEach((input) => input.blur());
+  $$("input", els.list).forEach((input) => input.blur());
   dragId = Number(li.dataset.id);
   li.classList.add("dragging");
   e.dataTransfer.effectAllowed = "move";
@@ -327,9 +346,7 @@ async function handleDragEnd() {
   draggingEl?.classList.remove("dragging");
   if (dragId == null) return;
   dragId = null;
-  const orderedIds = Array.from(els.list.querySelectorAll(".task-row")).map((el) =>
-    Number(el.dataset.id),
-  );
+  const orderedIds = $$(".task-row", els.list).map((el) => Number(el.dataset.id));
   await tasksReorder(orderedIds);
 }
 
@@ -365,19 +382,13 @@ export function initTasks() {
   });
   listen(Events.TIMER_TICK, (snap) => {
     if (!snap) return;
-    const changed =
-      snap.phase !== timerState.phase || snap.is_running !== timerState.isRunning;
+    const changed = snap.phase !== timerState.phase || snap.is_running !== timerState.isRunning;
     timerState = { phase: snap.phase, isRunning: snap.is_running };
     if (changed) {
       const current = tasks.find((t) => t.is_current && !t.completed);
       renderHandle(current);
-      // Mirror phase + running state onto the headline so the live
-      // progress strip can key off CSS instead of inline styles.
       els.currentTaskHeadline?.classList.toggle("is-running", snap.is_running);
-      els.currentTaskHeadline?.classList.toggle(
-        "is-pomodoro",
-        snap.phase === "pomodoro",
-      );
+      els.currentTaskHeadline?.classList.toggle("is-pomodoro", snap.phase === "pomodoro");
     }
   });
 }

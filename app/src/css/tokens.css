@@ -66,7 +66,7 @@
   --ring-size: 272px;
   --ring-stroke: 5px;
   --drawer-handle-h: 48px;
-  --ring-track: rgba(245, 241, 234, 0.10);
+  --ring-track: rgba(245, 241, 234, 0.1);
   --ring-progress: rgba(245, 241, 234, 0.95);
 
   /* motion */
