@@ -1,0 +1,74 @@
+name: Release
+
+# Builds the Windows installer when:
+#   - a tag matching v*.*.* is pushed → drafts a GitHub Release with the
+#     NSIS installer attached (review + publish manually from the Releases
+#     page).
+#   - the workflow is dispatched manually → uploads the installer as a
+#     workflow artifact for ad-hoc download.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri -> target
+
+      - name: Install pnpm dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri NSIS installer
+        run: pnpm tauri build --bundles nsis
+
+      - name: Show artifacts
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse src-tauri/target/release/bundle/nsis -File |
+            Select-Object FullName, Length
+
+      - name: Upload artifact (manual dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: focustimer-nsis-installer
+          path: app/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
+      - name: Draft GitHub Release (tag push)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: false
+          name: FocusTimer ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          files: app/src-tauri/target/release/bundle/nsis/*.exe
+          fail_on_unmatched_files: true
+          generate_release_notes: true
